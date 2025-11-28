@@ -1,0 +1,30 @@
+
+
+fix consistency that was broken by Claude Sonnet 4.5 in UI
+
+make sure UI buttons have glass morphism applied and that they do not blend in with the background
+
+improve animations across the board for more fluidity
+
+ensure all map types are correct
+
+double check all map types, there should be no mistakes
+
+after all of this, add asia and africa, check everything to make sure it's in order, after that add australia and america, check again, and finally - antarctica
+
+add a "Developed by Eptesicus Labs" in the info icon, and move it to the left corner
+
+add a language switch option (en, bg, it) and translate accordingly
+
+the language switch option should sit on top of the resize buttons, not overlap them. When opening the language switch menu, however, the button should morph fluidly. Same goes for the map layer, where the whole bar should morph.
+
+the draw, measure and mark functions should be unselect able by clicking on the selected function again. 
+
+the draw function currently does not draw
+
+the measure function currently does not measure
+
+the mark function is unreliable and unintuitive, also there is no option to remove marker
+
+ponder on how to improve rendering performance without sacrifices
+

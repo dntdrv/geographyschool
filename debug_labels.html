@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Debug Labels</title>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
+                sources: {
+                    'osm': {
+                        type: 'raster',
+                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                        tileSize: 256
+                    },
+                    'openfreemap': {
+                        type: 'vector',
+                        tiles: ['https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf'],
+                        maxzoom: 14
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'country-labels',
+                        type: 'symbol',
+                        source: 'openfreemap',
+                        'source-layer': 'place',
+                        filter: ['==', 'class', 'country'],
+                        layout: {
+                            'text-field': ['get', 'name:en'],
+                            'text-font': ['Open Sans Bold'],
+                            'text-size': 16
+                        },
+                        paint: {
+                            'text-color': '#000000',
+                            'text-halo-color': '#ffffff',
+                            'text-halo-width': 2
+                        }
+                    }
+                ],
+                glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf"
+            },
+            center: [12, 42], // Italy
+            zoom: 5
+        });
+
+        map.on('load', () => {
+            console.log('Map loaded');
+        });
+    </script>
+</body>
+</html>

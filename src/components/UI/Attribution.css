@@ -1,0 +1,88 @@
+.info-btn-container {
+    position: absolute;
+    top: var(--spacing-lg);
+    left: var(--spacing-lg);
+    z-index: 101;
+    user-select: none;
+}
+
+.info-btn {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    color: var(--icon-color);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    /* Circle shape */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: var(--glass-shadow);
+}
+
+.info-btn:hover {
+    background: var(--color-surface-hover);
+    transform: scale(1.05);
+}
+
+.info-panel {
+    position: absolute;
+    top: calc(100% + var(--spacing-sm));
+    left: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    min-width: 240px;
+    box-shadow: var(--glass-shadow);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.info-panel h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-medium);
+}
+
+.info-panel p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+.info-panel strong {
+    color: var(--color-accent);
+}
+
+.attribution-text {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    z-index: 100;
+    font-size: 10px;
+    color: var(--color-text);
+    opacity: 0.6;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,304 @@
+.map-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+.map {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* Cursor styles for different tools */
+.map.tool-draw {
+    cursor: crosshair !important;
+}
+
+.map.tool-measure {
+    cursor: crosshair !important;
+}
+
+.map.tool-marker {
+    cursor: pointer !important;
+}
+
+/* Override MapLibre cursor during drawing */
+.map.tool-draw .maplibregl-canvas-container,
+.map.tool-measure .maplibregl-canvas-container,
+.map.tool-marker .maplibregl-canvas-container {
+    cursor: inherit !important;
+}
+
+/* Glassmorphism for MapLibre controls */
+.maplibregl-ctrl-group {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-md) !important;
+    overflow: hidden;
+}
+
+.maplibregl-ctrl-group button {
+    background-color: transparent !important;
+    border: none !important;
+    color: var(--icon-color) !important;
+    width: 32px;
+    height: 32px;
+    transition: var(--transition-fast);
+}
+
+.maplibregl-ctrl-group button:hover {
+    background-color: var(--color-surface-hover) !important;
+}
+
+.maplibregl-ctrl-group button+button {
+    border-top: 1px solid var(--glass-border) !important;
+}
+
+.maplibregl-ctrl-icon {
+    filter: none !important;
+    /* Icons are now handled via color property */
+}
+
+/* Attribution styling */
+.maplibregl-ctrl-attrib {
+    display: none !important;
+    /* Hide default attribution as we are building a custom one */
+}
+
+/* MapboxDraw controls styling */
+.mapboxgl-ctrl-group {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.map-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+.map {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* Cursor styles for different tools */
+.map.tool-draw {
+    cursor: crosshair !important;
+}
+
+.map.tool-measure {
+    cursor: crosshair !important;
+}
+
+.map.tool-marker {
+    cursor: pointer !important;
+}
+
+/* Override MapLibre cursor during drawing */
+.map.tool-draw .maplibregl-canvas-container,
+.map.tool-measure .maplibregl-canvas-container,
+.map.tool-marker .maplibregl-canvas-container {
+    cursor: inherit !important;
+}
+
+/* Glassmorphism for MapLibre controls */
+.maplibregl-ctrl-group {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-md) !important;
+    overflow: hidden;
+}
+
+.maplibregl-ctrl-group button {
+    background-color: transparent !important;
+    border: none !important;
+    color: var(--icon-color) !important;
+    width: 32px;
+    height: 32px;
+    transition: var(--transition-fast);
+}
+
+.maplibregl-ctrl-group button:hover {
+    background-color: var(--color-surface-hover) !important;
+}
+
+.maplibregl-ctrl-group button+button {
+    border-top: 1px solid var(--glass-border) !important;
+}
+
+.maplibregl-ctrl-icon {
+    filter: none !important;
+    /* Icons are now handled via color property */
+}
+
+/* Attribution styling */
+.maplibregl-ctrl-attrib {
+    display: none !important;
+    /* Hide default attribution as we are building a custom one */
+}
+
+/* MapboxDraw controls styling */
+.mapboxgl-ctrl-group {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.mapboxgl-ctrl-group button {
+    background-color: transparent !important;
+    color: var(--icon-color) !important;
+}
+
+/* Custom Zoom Controls */
+.custom-zoom-controls {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+}
+
+.zoom-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: var(--color-text);
+    font-size: 24px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    padding: 0;
+}
+
+.zoom-btn:hover {
+    background: var(--color-surface-hover);
+    transform: scale(1.05);
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
+}
+
+/* MapLibre Popup Styling */
+.maplibregl-popup-content {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px !important;
+    box-shadow: var(--glass-shadow) !important;
+    padding: 16px !important;
+    color: var(--color-text) !important;
+    font-family: var(--font-family) !important;
+}
+
+.maplibregl-popup-tip {
+    border-top-color: var(--glass-border) !important;
+    opacity: 0.5;
+}
+
+.maplibregl-popup-close-button {
+    color: var(--color-text-muted) !important;
+    font-size: 16px !important;
+    padding: 4px !important;
+    right: 8px !important;
+    top: 8px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+    background: transparent !important;
+    color: var(--color-text) !important;
+}
+
+/* Coordinates Display */
+.coords-display {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 90;
+}
+
+/* Compass */
+.compass-display {
+    position: absolute;
+    top: 80px;
+    /* Below language switcher */
+    right: 30px;
+    width: 40px;
+    height: 40px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s ease-out;
+    z-index: 90;
+    box-shadow: var(--glass-shadow);
+}
+
+.compass-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 15px solid var(--color-text);
+    position: absolute;
+    top: 8px;
+}
+
+.compass-n {
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--color-text);
+    margin-top: 18px;
+}
+
+.mapboxgl-ctrl-group button:hover {
+    background-color: var(--color-surface-hover) !important;
+}

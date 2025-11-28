@@ -1,0 +1,160 @@
+/* Section Headers */
+.layer-section-header {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: #666666;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+/* Base Layer Items */
+.layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 400;
+    color: #333;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px 0;
+}
+
+.layer-item:hover {
+    color: #000;
+}
+
+.layer-item.active {
+    font-weight: 600;
+    color: #000000;
+}
+
+.active-dot {
+    margin-right: 8px;
+    font-size: 18px;
+    line-height: 0;
+    color: #000;
+}
+
+/* Divider */
+.layer-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+/* Overlay Items */
+.overlay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.overlay-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.overlay-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 400;
+}
+
+/* Toggle Switch (iOS Style) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked+.slider {
+    background-color: #000;
+}
+
+input:checked+.slider:before {
+    transform: translateX(16px);
+}
+
+/* Adaptive Contrast for Dark Mode */
+.layer-menu-container.dark-mode {
+    background: transparent;
+    border-color: transparent;
+}
+
+.layer-menu-container.dark-mode .layer-section-header {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.layer-menu-container.dark-mode .layer-item {
+    color: #ffffff;
+}
+
+.layer-menu-container.dark-mode .layer-item:hover {
+    color: #ffffff;
+}
+
+.layer-menu-container.dark-mode .layer-item.active {
+    color: #ffffff;
+}
+
+.layer-menu-container.dark-mode .active-dot {
+    color: #ffffff;
+}
+
+.layer-menu-container.dark-mode .layer-divider {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-menu-container.dark-mode .overlay-label {
+    color: #ffffff;
+}
+
+.layer-menu-container.dark-mode input:checked+.slider {
+    background-color: #fff;
+}
+
+.layer-menu-container.dark-mode input:checked+.slider:before {
+    background-color: #000;
+}
