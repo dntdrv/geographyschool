@@ -28,7 +28,8 @@ export const MAP_STYLES: Record<MapStyleId, MapStyle> = {
         name: 'Satellite',
         // Esri World Imagery (Raster) - No localization support for base, but we can overlay vector labels
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        labelsUrl: 'https://tiles.openfreemap.org/styles/positron', // Use Positron as overlay? No, that's a full style.
+        // Use Carto Dark Only Labels for Satellite (Raster)
+        labelsUrl: 'https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png',
         // For satellite, we might need a transparent label layer. 
         // OpenFreeMap doesn't seem to offer a "labels only" transparent style easily without custom GL style manipulation.
         // Fallback: Keep Carto labels for Satellite for now, OR use OpenFreeMap Bright and filter layers?

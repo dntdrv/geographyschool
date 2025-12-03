@@ -26,7 +26,7 @@ const ZoomControl: React.FC<ZoomControlProps> = ({ onZoomIn, onZoomOut, onLocate
                     transition={spring}
                     title="Locate Me"
                 >
-                    <Navigation size={20} />
+                    <Navigation size={24} />
                 </motion.button>
             )}
 

@@ -378,3 +378,41 @@
     color: var(--text-secondary);
     font-weight: 500;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .top-center-group {
+        top: 16px;
+        width: 95%;
+        max-width: 100%;
+        gap: 8px;
+    }
+
+    .search-container-wrapper {
+        width: auto;
+        flex: 1;
+        max-width: none;
+    }
+
+    .bottom-right-stack {
+        bottom: 90px;
+        /* Move above the dock */
+        right: 16px;
+    }
+
+    .bottom-left-stack {
+        bottom: 90px;
+        /* Move above the dock if needed, or keep low */
+        left: 16px;
+    }
+
+    .dock-wrapper {
+        bottom: 20px;
+        width: 90%;
+    }
+
+    .glass-dock {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
