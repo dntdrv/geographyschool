@@ -14,8 +14,9 @@
     "@turf/turf": "^7.3.0",
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "@types/maplibre-gl": "^1.13.2",
+    "framer-motion": "^12.23.25",
     "lucide-react": "^0.554.0",
-    "maplibre-gl": "^5.13.0",
+    "maplibre-gl": "^4.7.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

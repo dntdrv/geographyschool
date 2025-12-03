@@ -1,36 +1,27 @@
-.map-wrap {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
+.map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-.map {
+.map-container {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
 }
 
-/* Cursor styles for different tools */
-.map.tool-draw {
-    cursor: crosshair !important;
-}
-
-.map.tool-measure {
-    cursor: crosshair !important;
-}
-
-.map.tool-marker {
+.map-container.tool-marker {
     cursor: pointer !important;
 }
 
 /* Override MapLibre cursor during drawing */
-.map.tool-draw .maplibregl-canvas-container,
-.map.tool-measure .maplibregl-canvas-container,
-.map.tool-marker .maplibregl-canvas-container {
-    cursor: inherit !important;
+.map-container.tool-draw .maplibregl-canvas-container,
+.map-container.tool-measure .maplibregl-canvas-container,
+.map-container.tool-marker .maplibregl-canvas-container {
+    cursor: inherit;
 }
 
 /* Glassmorphism for MapLibre controls */
@@ -55,6 +46,8 @@
 
 .maplibregl-ctrl-group button:hover {
     background-color: var(--color-surface-hover) !important;
+    transform: none !important;
+    /* Prevent scaling which might cause blur */
 }
 
 .maplibregl-ctrl-group button+button {
@@ -63,97 +56,11 @@
 
 .maplibregl-ctrl-icon {
     filter: none !important;
-    /* Icons are now handled via color property */
 }
 
 /* Attribution styling */
 .maplibregl-ctrl-attrib {
     display: none !important;
-    /* Hide default attribution as we are building a custom one */
-}
-
-/* MapboxDraw controls styling */
-.mapboxgl-ctrl-group {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow) !important;
-    border-radius: var(--radius-md) !important;
-}
-
-.map-wrap {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-}
-
-.map {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-}
-
-/* Cursor styles for different tools */
-.map.tool-draw {
-    cursor: crosshair !important;
-}
-
-.map.tool-measure {
-    cursor: crosshair !important;
-}
-
-.map.tool-marker {
-    cursor: pointer !important;
-}
-
-/* Override MapLibre cursor during drawing */
-.map.tool-draw .maplibregl-canvas-container,
-.map.tool-measure .maplibregl-canvas-container,
-.map.tool-marker .maplibregl-canvas-container {
-    cursor: inherit !important;
-}
-
-/* Glassmorphism for MapLibre controls */
-.maplibregl-ctrl-group {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow) !important;
-    border-radius: var(--radius-md) !important;
-    overflow: hidden;
-}
-
-.maplibregl-ctrl-group button {
-    background-color: transparent !important;
-    border: none !important;
-    color: var(--icon-color) !important;
-    width: 32px;
-    height: 32px;
-    transition: var(--transition-fast);
-}
-
-.maplibregl-ctrl-group button:hover {
-    background-color: var(--color-surface-hover) !important;
-}
-
-.maplibregl-ctrl-group button+button {
-    border-top: 1px solid var(--glass-border) !important;
-}
-
-.maplibregl-ctrl-icon {
-    filter: none !important;
-    /* Icons are now handled via color property */
-}
-
-/* Attribution styling */
-.maplibregl-ctrl-attrib {
-    display: none !important;
-    /* Hide default attribution as we are building a custom one */
 }
 
 /* MapboxDraw controls styling */
@@ -168,18 +75,8 @@
 
 .mapboxgl-ctrl-group button {
     background-color: transparent !important;
+    border: none !important;
     color: var(--icon-color) !important;
-}
-
-/* Custom Zoom Controls */
-.custom-zoom-controls {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 100;
 }
 
 .zoom-btn {
@@ -196,28 +93,6 @@
     font-weight: 300;
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    padding: 0;
-}
-
-.zoom-btn:hover {
-    background: var(--color-surface-hover);
-    transform: scale(1.05);
-}
-
-.zoom-btn:active {
-    transform: scale(0.95);
-}
-
-/* MapLibre Popup Styling */
-.maplibregl-popup-content {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%)) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 20px !important;
     box-shadow: var(--glass-shadow) !important;
     padding: 16px !important;
     color: var(--color-text) !important;
@@ -299,6 +174,99 @@
     margin-top: 18px;
 }
 
-.mapboxgl-ctrl-group button:hover {
-    background-color: var(--color-surface-hover) !important;
+/* Legend Styles */
+.map-legend {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur)) saturate(var(--glass-saturation, 100%));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    min-width: 200px;
+    max-width: 250px;
+    box-shadow: var(--glass-shadow);
+    z-index: 90;
+    pointer-events: none;
+}
+
+.legend-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.legend-section {
+    margin-bottom: 12px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 6px;
+}
+
+.legend-gradient {
+    height: 12px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.temperature-gradient {
+    background: linear-gradient(to right, #0000ff 0%, #00ffff 25%, #00ff00 50%, #ffff00 75%, #ff0000 100%);
+}
+
+.legend-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--color-text-muted);
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--color-text);
+}
+
+.color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.rain-light {
+    background: rgba(0, 255, 0, 0.6);
+}
+
+.rain-heavy {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+.snow {
+    background: rgba(200, 200, 255, 0.8);
+}
+
+.icon-box {
+    font-size: 16px;
+    margin-right: 4px;
 }

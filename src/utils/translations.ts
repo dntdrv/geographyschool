@@ -14,8 +14,11 @@ export const translations = {
             topo: 'Topographic'
         },
         overlays: {
-            graticules: 'Graticules (Grid)',
-            labels: 'Show Labels'
+            graticules: 'Grid',
+            labels: 'Show Labels',
+            borders: 'Country Borders',
+            rain: 'Rain',
+            temperature: 'Temperature'
         },
         ui: {
             measurement: 'Measurement',
@@ -24,7 +27,23 @@ export const translations = {
             continents: 'Continents',
             language: 'Language',
             about: 'About',
-            developedBy: 'Developed by'
+            developedBy: 'Developed by',
+            searchPlaceholder: 'Search location...'
+        },
+        legend: {
+            precipitation: 'Precipitation',
+            temp: 'Land Surface Temp (°C)',
+            elevation: 'Elevation (m)',
+            light: 'Light',
+            moderate: 'Moderate',
+            heavy: 'Heavy'
+        },
+        marker: {
+            selectedLocation: 'Selected Location',
+            openInGoogleMaps: 'Open in Google Maps',
+            removeMarker: 'Remove Marker',
+            lat: 'Lat',
+            lng: 'Lng'
         }
     },
     bg: {
@@ -42,8 +61,11 @@ export const translations = {
             topo: 'Топографска'
         },
         overlays: {
-            graticules: 'Мрежа (Grid)',
-            labels: 'Покажи етикети'
+            graticules: 'Мрежа',
+            labels: 'Покажи етикети',
+            borders: 'Държавни граници',
+            rain: 'Дъжд',
+            temperature: 'Температура'
         },
         ui: {
             measurement: 'Измерване',
@@ -52,7 +74,23 @@ export const translations = {
             continents: 'Континенти',
             language: 'Език',
             about: 'За приложението',
-            developedBy: 'Разработено от'
+            developedBy: 'Разработено от',
+            searchPlaceholder: 'Търсене на локация...'
+        },
+        legend: {
+            precipitation: 'Валежи',
+            temp: 'Температура на повърхността (°C)',
+            elevation: 'Надморска височина (м)',
+            light: 'Леки',
+            moderate: 'Умерени',
+            heavy: 'Тежки'
+        },
+        marker: {
+            selectedLocation: 'Избрана локация',
+            openInGoogleMaps: 'Отвори в Google Maps',
+            removeMarker: 'Премахни маркера',
+            lat: 'Шир',
+            lng: 'Дълж'
         }
     },
     it: {
@@ -70,8 +108,11 @@ export const translations = {
             topo: 'Topografica'
         },
         overlays: {
-            graticules: 'Reticolo (Grid)',
-            labels: 'Mostra Etichette'
+            graticules: 'Reticolo',
+            labels: 'Mostra Etichette',
+            borders: 'Confini Nazionali',
+            rain: 'Pioggia',
+            temperature: 'Temperatura'
         },
         ui: {
             measurement: 'Misurazione',
@@ -80,7 +121,23 @@ export const translations = {
             continents: 'Continenti',
             language: 'Lingua',
             about: 'Informazioni',
-            developedBy: 'Sviluppato da'
+            developedBy: 'Sviluppato da',
+            searchPlaceholder: 'Cerca posizione...'
+        },
+        legend: {
+            precipitation: 'Precipitazioni',
+            temp: 'Temp. Superficie (°C)',
+            elevation: 'Altitudine (m)',
+            light: 'Leggera',
+            moderate: 'Moderata',
+            heavy: 'Forte'
+        },
+        marker: {
+            selectedLocation: 'Posizione Selezionata',
+            openInGoogleMaps: 'Apri in Google Maps',
+            removeMarker: 'Rimuovi Marcatore',
+            lat: 'Lat',
+            lng: 'Lng'
         }
     }
 };

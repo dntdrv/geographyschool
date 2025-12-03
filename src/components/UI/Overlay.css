@@ -1,3 +1,4 @@
+/* Overlay Container - Full Screen Pointer Events Pass-through */
 .overlay-container {
     position: absolute;
     top: 0;
@@ -5,172 +6,375 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    /* Let clicks pass through to map */
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
-    box-sizing: border-box;
+    z-index: 1000;
 }
 
-/* Top Right Controls */
-.top-right-controls {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    display: flex;
-    gap: 10px;
+/* Enable pointer events for actual UI elements */
+.overlay-container>* {
     pointer-events: auto;
-    align-items: center;
 }
 
-/* Coordinates Display */
-.coordinates-display {
+/* Top Center Group */
+.top-center-group {
     position: absolute;
-    bottom: 20px;
-    left: 120px;
-    /* Space for Scale Control */
-    background: rgba(255, 255, 255, 0.8);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: monospace;
-    pointer-events: auto;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: #333;
-}
-
-.dark-mode .coordinates-display {
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-}
-
-/* Measurement Display */
-.measurement-display {
-    position: absolute;
-    top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
-    pointer-events: auto;
-    z-index: 20;
-}
-
-/* Simple Toolbar */
-.simple-toolbar {
-    position: absolute;
-    bottom: 30px;
+    top: 24px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    padding: 8px;
-    border-radius: 16px;
-    pointer-events: auto;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    align-items: center;
+    z-index: 1010;
+    width: auto;
+    max-width: 90vw;
 }
 
-.dark-mode .simple-toolbar {
-    background: rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.1);
+.search-container-wrapper {
+    width: 320px;
+    max-width: 60vw;
 }
 
-.toolbar-btn {
-    background: rgba(255, 255, 255, 0.8);
-    border: none;
-    width: 44px;
-    height: 44px;
+.lang-container-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    width: 48px;
+    /* Match search bar height */
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 12px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.icon-btn.rounded-full {
+    border-radius: 9999px !important;
+}
+
+.lang-options {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    /* Align right since it's on the right side now */
+    margin-top: 8px;
+    width: 140px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2000;
+}
+
+.lang-options button {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: background-color 0.2s;
+}
+
+.lang-options button.active {
+    background: rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+}
+
+/* Bottom Left Stack: Coordinates, Legend */
+.bottom-left-stack {
+    position: absolute;
+    bottom: 24px;
+    left: 16px;
+    /* Adjusted to prevent cut-off */
+    display: flex;
+    flex-direction: column;
+    /* Stack from top down */
+    gap: 16px;
+    /* Margin between items */
+    align-items: flex-start;
+    z-index: 1010;
+}
+
+/* Bottom Right Stack: Zoom, Locate */
+.bottom-right-stack {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 16px;
+    align-items: flex-end;
+    z-index: 1010;
+}
+
+/* Measurement Pill (Ruler Menu) */
+.measurement-pill {
+    position: absolute;
+    bottom: calc(80px + 20px);
+    /* Above Dock (approx 80px) */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 36px 12px 20px;
+    /* Extra right padding for X */
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    z-index: 1005;
+    min-width: 150px;
+    justify-content: center;
+    top: auto;
+    /* Override previous top positioning */
+}
+
+.clear-btn-absolute {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: #333;
+    color: var(--text-primary);
 }
 
-.dark-mode .toolbar-btn {
-    background: rgba(30, 30, 30, 0.8);
-    color: #eee;
-}
-
-.toolbar-btn:hover {
-    transform: translateY(-2px);
-    background: white;
-}
-
-.dark-mode .toolbar-btn:hover {
-    background: #444;
-}
-
-.toolbar-btn.active {
-    background: #3b82f6;
-    color: white;
-}
-
-/* Layer Menu Popup */
-.layer-menu-popup {
+/* Bottom Center: Dock Wrapper */
+.dock-wrapper {
     position: absolute;
-    bottom: 90px;
-    /* Above toolbar */
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    width: 300px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 1010;
+    width: auto;
+    max-width: 90vw;
+}
+
+/* The Glass Dock (Compact Mode) */
+.glass-dock {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    /* Reduced padding */
+    gap: 8px;
+    height: 44px;
+    /* Compact height */
+    border-radius: 999px !important;
+}
+
+.dock-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px;
+    /* Reduced padding */
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    width: 32px;
+    height: 32px;
+}
+
+.dock-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.dock-btn.active {
+    opacity: 1;
+    color: #000;
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.center-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.dock-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Layer Panel Popup */
+.layer-panel-popup {
+    width: 320px;
+    max-width: 90vw;
     padding: 16px;
-    pointer-events: auto;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 20;
-    color: #333;
+    margin-bottom: 8px;
 }
 
-.dark-mode .layer-menu-popup {
-    background: rgba(30, 30, 30, 0.95);
-    color: white;
-}
-
-.popup-header {
+.panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
-    font-weight: bold;
-    font-size: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.5);
 }
 
-.close-btn {
-    background: none;
+.close-panel-btn {
+    background: transparent;
     border: none;
     cursor: pointer;
-    color: inherit;
-    opacity: 0.6;
-    padding: 4px;
+    color: var(--text-primary);
+    opacity: 0.5;
+    transition: opacity 0.2s;
 }
 
-.close-btn:hover {
+.close-panel-btn:hover {
     opacity: 1;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translate(-50%, 20px);
-    }
+/* Leaflet Popup Overrides */
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #1f2937 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    padding: 0 !important;
+    /* Let content handle padding */
+}
 
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-top: none;
+    /* Tip triangle logic usually needs care */
+}
+
+.leaflet-popup-content {
+    margin: 12px !important;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.legend-gradient {
+    height: 12px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.temperature-gradient {
+    background: linear-gradient(to right, #0000ff 0%, #00ffff 25%, #00ff00 50%, #ffff00 75%, #ff0000 100%);
+}
+
+.legend-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+.color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.rain-light {
+    background: rgba(0, 255, 0, 0.6);
+}
+
+.rain-heavy {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+.snow {
+    background: rgba(200, 200, 255, 0.8);
+}
+
+.icon-box {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+/* Coordinates Pill */
+.coordinates-pill {
+    padding: 6px 12px;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 140px;
+}
+
+.coords-text {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.scale-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.scale-bar {
+    height: 4px;
+    background: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+    margin-bottom: 2px;
+    transition: width 0.2s ease-out;
+}
+
+.scale-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 500;
 }

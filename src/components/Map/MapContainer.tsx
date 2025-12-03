@@ -1,31 +1,31 @@
-import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import maplibregl from 'maplibre-gl';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import * as turf from '@turf/turf';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import './MapContainer.css';
-import { MAP_STYLES } from './mapStyles';
-import type { MapStyleId } from './mapStyles';
+import { MAP_STYLES, type MapStyleId } from './mapStyles';
+import * as turf from '@turf/turf';
+import type { Language } from '../UI/LanguageSwitcher';
+import { translations } from '../../utils/translations';
 
-// Define Language type locally since it's not exported from translations
-export type Language = 'en' | 'it' | 'bg';
-
-export interface MapRef {
-    setTool: (tool: string) => void;
-    setLayer: (layer: MapStyleId) => void;
-    flyToLocation: (center: [number, number], zoom?: number, bbox?: [number, number, number, number]) => void;
-}
-
-interface MapContainerProps {
-    onMeasure: (value: string) => void;
+export interface MapContainerProps {
+    onMeasure: (measurement: string) => void;
     activeLayer: MapStyleId;
     showGraticules: boolean;
     showLabels: boolean;
-    showWeather: boolean;
-    showClouds: boolean;
+    showBorders: boolean;
+    showTemperature: boolean;
     currentLang: Language;
-    onCoordinatesChange: (coords: { lat: number; lng: number } | null) => void;
+    onCoordinatesChange: (coords: { lat: number; lng: number; zoom: number } | null) => void;
+    activeToolRef: React.MutableRefObject<string | null>;
+    onToolChangeRef: React.MutableRefObject<(tool: string | null) => void>;
+}
+
+export interface MapRef {
+    flyToLocation: (center: [number, number], zoom: number, bbox?: [number, number, number, number]) => void;
+    setTool: (tool: string) => void;
+    clearMeasurement: () => void;
+    getMap: () => maplibregl.Map | null;
+    locateMe: () => void;
 }
 
 const MapContainer = forwardRef<MapRef, MapContainerProps>(({
@@ -33,179 +33,169 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
     activeLayer,
     showGraticules,
     showLabels,
-    showWeather,
-    showClouds,
+    showBorders,
+    showTemperature,
     currentLang,
-    onCoordinatesChange
+    onCoordinatesChange,
+    activeToolRef,
+    onToolChangeRef
 }, ref) => {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
-    const draw = useRef<MapboxDraw | null>(null);
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const lastActiveLayer = useRef<MapStyleId | null>(null); // Initialize as null to force first update
     const markers = useRef<maplibregl.Marker[]>([]);
 
-    const [activeTool, setActiveTool] = useState<string | null>(null);
-    const activeToolRef = useRef<string | null>(null);
+    // Ruler State
+    const rulerState = useRef<{ active: boolean; points: number[][]; tempPoint: number[] | null }>({
+        active: false,
+        points: [],
+        tempPoint: null
+    });
 
-    // Diagnostic State
-    const [debugInfo, setDebugInfo] = useState<{
-        zoom: string;
-        layers: string[];
-        weatherTs: string;
-    }>({ zoom: '-', layers: [], weatherTs: '-' });
+    // Helper to update ruler layer
+    const updateRulerLayer = () => {
+        if (!map.current || !map.current.getSource('ruler-source')) return;
 
-    // Custom Ruler State
-    const rulerState = useRef<{
-        active: boolean;
-        points: [number, number][];
-        tempPoint: [number, number] | null;
-    }>({ active: false, points: [], tempPoint: null });
+        const source = map.current.getSource('ruler-source') as maplibregl.GeoJSONSource;
+        const features: any[] = [];
 
-    // Expose methods to parent
+        if (rulerState.current.points.length > 0) {
+            // Points
+            rulerState.current.points.forEach(pt => {
+                features.push(turf.point(pt));
+            });
+
+            // Line
+            if (rulerState.current.points.length > 1) {
+                features.push(turf.lineString(rulerState.current.points));
+            }
+
+            // Temp Line (rubber band)
+            if (rulerState.current.tempPoint && rulerState.current.points.length > 0) {
+                const lastPoint = rulerState.current.points[rulerState.current.points.length - 1];
+                features.push(turf.lineString([lastPoint, rulerState.current.tempPoint]));
+            }
+        }
+
+        source.setData({ type: 'FeatureCollection', features });
+    };
+
+    // Helper to set active tool
+    const setActiveTool = (tool: string | null) => {
+        if (!map.current || !mapContainer.current) return;
+
+        // Reset previous state
+        rulerState.current = { active: false, points: [], tempPoint: null };
+        updateRulerLayer();
+        map.current.getCanvas().style.cursor = '';
+        mapContainer.current.classList.remove('tool-draw', 'tool-measure', 'tool-marker');
+
+        if (tool === 'measure-distance') {
+            rulerState.current.active = true;
+            map.current.getCanvas().style.cursor = 'crosshair';
+            mapContainer.current.classList.add('tool-measure');
+        } else if (tool === 'marker') {
+            map.current.getCanvas().style.cursor = 'pointer';
+            mapContainer.current.classList.add('tool-marker');
+        }
+    };
+
     useImperativeHandle(ref, () => ({
-        setTool: (tool: string) => {
-            if (!map.current) return;
-
-            // Deactivate previous tool
-            if (activeToolRef.current === 'measure-distance') {
-                rulerState.current = { active: false, points: [], tempPoint: null };
-                updateRulerLayer();
-                onMeasure('');
-                map.current.getCanvas().style.cursor = '';
-            }
-
-            // Activate new tool
-            if (tool === 'measure-distance') {
-                if (activeToolRef.current === 'measure-distance') {
-                    // Toggle off
-                    setActiveTool(null);
-                    activeToolRef.current = null;
-                } else {
-                    // Toggle on
-                    setActiveTool('measure-distance');
-                    activeToolRef.current = 'measure-distance';
-                    rulerState.current = { active: true, points: [], tempPoint: null };
-                    map.current.getCanvas().style.cursor = 'crosshair';
-                }
-                return;
-            }
-
-            setActiveTool(tool);
-            activeToolRef.current = tool;
-            map.current.getCanvas().style.cursor = tool === 'marker' ? 'pointer' : '';
-
-            if (tool === 'none') {
-                setActiveTool(null);
-                activeToolRef.current = null;
-            }
-        },
-        setLayer: (_layer: MapStyleId) => {
-            console.warn('setLayer is deprecated. Use activeLayer prop instead.');
-        },
-        flyToLocation: (center: [number, number], zoom?: number, bbox?: [number, number, number, number]) => {
-            if (!map.current) return;
-
+        flyToLocation: (center, zoom, bbox) => {
             if (bbox) {
-                map.current.fitBounds(bbox as [number, number, number, number], {
-                    padding: 50,
-                    maxZoom: 15
-                });
+                map.current?.fitBounds(bbox as [number, number, number, number], { padding: 50 });
             } else {
-                map.current.flyTo({
-                    center,
-                    zoom: zoom || 10,
-                    essential: true
-                });
+                map.current?.flyTo({ center, zoom });
+            }
+        },
+        setTool: (tool) => {
+            setActiveTool(tool === 'none' ? null : tool);
+        },
+        clearMeasurement: () => {
+            rulerState.current = { active: false, points: [], tempPoint: null };
+            updateRulerLayer();
+            setActiveTool(null);
+            onToolChangeRef.current(null);
+        },
+        getMap: () => map.current,
+        locateMe: () => {
+            if (!map.current) return;
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        map.current?.flyTo({
+                            center: [longitude, latitude],
+                            zoom: 14,
+                            essential: true
+                        });
+
+                        // Add a blue dot marker
+                        new maplibregl.Marker({ color: '#3b82f6' })
+                            .setLngLat([longitude, latitude])
+                            .addTo(map.current!);
+                    },
+                    (error) => {
+                        console.error("Geolocation error:", error);
+                        alert("Could not get your location.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
             }
         }
     }));
 
-    // Helper to update Custom Ruler Layer
-    const updateRulerLayer = () => {
-        if (!map.current) return;
-
-        const sourceId = 'ruler-source';
-        const source = map.current.getSource(sourceId) as maplibregl.GeoJSONSource;
-
-        if (!source) return;
-
-        const features: any[] = [];
-        const points = rulerState.current.points;
-        const temp = rulerState.current.tempPoint;
-
-        // 1. Points
-        points.forEach(p => {
-            features.push(turf.point(p));
-        });
-
-        // 2. Line
-        if (points.length > 0) {
-            const lineCoords = [...points];
-            if (temp) lineCoords.push(temp);
-
-            if (lineCoords.length >= 2) {
-                features.push(turf.lineString(lineCoords));
-            }
-        }
-
-        source.setData({
-            type: 'FeatureCollection',
-            features: features
-        });
-    };
-
     // Initialize Map
     useEffect(() => {
-        if (map.current) return;
+        if (map.current) return; // Initialize only once
 
-        if (mapContainer.current) {
+        if (!mapContainer.current) {
+            console.error("Map container ref is null");
+            return;
+        }
+
+        try {
+            // Initialize with empty style to avoid flash of wrong style/colorful map
+            const initialStyle = { version: 8, sources: {}, layers: [] };
+
             map.current = new maplibregl.Map({
                 container: mapContainer.current,
-                style: {
-                    version: 8,
-                    sources: {
-                        'terrain-source': {
-                            type: 'raster-dem',
-                            url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
-                            tileSize: 256
-                        }
-                    },
-                    layers: [],
-                    // Use OpenFreeMap glyphs which are guaranteed to work with their tiles
-                    glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
-                },
-                center: [10, 50], // Default to Europe
-                zoom: 4,
+                style: initialStyle as any, // Cast to any to avoid type complaints with empty style
+                center: [20, 50], // Europe centered
+                zoom: 3.5,
+                maxZoom: 18,
                 attributionControl: false,
-                pitch: 0,
-                dragRotate: false, // DISABLE ROTATION
-                touchZoomRotate: false, // DISABLE ROTATION
-                localIdeographFontFamily: "'Inter', sans-serif",
-                maxTileCacheSize: 100
-            });
-
-            // Add Controls
-            map.current.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-            map.current.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
-            map.current.addControl(new maplibregl.GeolocateControl({
-                positionOptions: { enableHighAccuracy: true },
-                trackUserLocation: true
-            }), 'bottom-right');
-
-            // Initialize Draw (Only for other potential tools, NOT ruler)
-            draw.current = new MapboxDraw({
-                displayControlsDefault: false,
-                controls: { line_string: false, trash: false },
-                defaultMode: 'simple_select'
+                preserveDrawingBuffer: true,
+                trackResize: true
             });
 
             map.current.on('load', () => {
-                // Add Ruler Source & Layers
-                map.current?.addSource('ruler-source', {
+                console.log("Map Loaded Successfully");
+                setIsMapLoaded(true);
+
+                if (!map.current) return;
+
+                // Initialize Slot Architecture
+                const slots = ['slot-base', 'slot-data', 'slot-roads', 'slot-ui'];
+                slots.forEach(slotId => {
+                    if (!map.current?.getLayer(slotId)) {
+                        map.current?.addLayer({
+                            id: slotId,
+                            type: 'background',
+                            paint: { 'background-color': 'rgba(0,0,0,0)' }
+                        });
+                    }
+                });
+
+                // Initialize Ruler Source/Layers
+                map.current.addSource('ruler-source', {
                     type: 'geojson',
                     data: { type: 'FeatureCollection', features: [] }
                 });
 
-                map.current?.addLayer({
+                map.current.addLayer({
                     id: 'ruler-line',
                     type: 'line',
                     source: 'ruler-source',
@@ -217,7 +207,7 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     filter: ['==', '$type', 'LineString']
                 });
 
-                map.current?.addLayer({
+                map.current.addLayer({
                     id: 'ruler-points',
                     type: 'circle',
                     source: 'ruler-source',
@@ -231,68 +221,79 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                 });
             });
 
+            map.current.on('error', (e) => {
+                console.error("MapLibre Error:", e);
+            });
+
             // Click Handler
             map.current.on('click', (e) => {
                 if (!map.current) return;
 
-                // Custom Ruler Logic - Use activeToolRef to avoid stale closure
-                if (activeToolRef.current === 'measure-distance' && rulerState.current.active) {
-                    const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+                if (rulerState.current.active) {
+                    rulerState.current.points.push([e.lngLat.lng, e.lngLat.lat]);
+                    updateRulerLayer();
 
-                    if (rulerState.current.points.length === 0) {
-                        // Start Point
-                        rulerState.current.points = [coords];
-                        updateRulerLayer();
-                    } else if (rulerState.current.points.length === 1) {
-                        // End Point
-                        rulerState.current.points.push(coords);
-                        rulerState.current.tempPoint = null; // Clear temp
-                        rulerState.current.active = false; // Stop drawing
-
-                        updateRulerLayer();
-
-                        // Calculate final distance
+                    if (rulerState.current.points.length > 1) {
                         const line = turf.lineString(rulerState.current.points);
                         const length = turf.length(line, { units: 'kilometers' });
                         onMeasure(`${length.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
 
-                        // Reset cursor
+                        // Stop measuring after 2 points
+                        rulerState.current.active = false;
                         map.current.getCanvas().style.cursor = '';
-                        setActiveTool(null); // Deactivate tool in UI
+                        if (mapContainer.current) {
+                            mapContainer.current.classList.remove('tool-measure');
+                        }
                         activeToolRef.current = null;
+                        onToolChangeRef.current(null);
                     }
                     return;
                 }
 
-                // Marker Tool
-                if (map.current.getCanvas().style.cursor === 'pointer') {
+                if (activeToolRef.current === 'marker') {
                     const marker = new maplibregl.Marker({ color: '#ef4444' })
                         .setLngLat(e.lngLat)
                         .addTo(map.current);
 
+                    // Calculate tile coordinates for zoom level 15
+                    const n = Math.pow(2, 15);
+                    const xTile = Math.floor(n * ((e.lngLat.lng + 180) / 360));
+                    const latRad = e.lngLat.lat * Math.PI / 180;
+                    const yTile = Math.floor(n * (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2);
+
+                    // Esri World Imagery Tile URL (Free)
+                    const tileUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/15/${yTile}/${xTile}`;
+
+                    const t = translations[currentLang].marker;
+
                     const popupContent = document.createElement('div');
+                    popupContent.className = 'glass-popup-content';
                     popupContent.innerHTML = `
-                        <div style="color: #333; padding: 5px; min-width: 150px;">
-                            <strong>Location</strong><br/>
-                            Lat: ${e.lngLat.lat.toFixed(4)}<br/>
-                            Lng: ${e.lngLat.lng.toFixed(4)}<br/>
-                            <a href="https://www.google.com/maps?q=${e.lngLat.lat},${e.lngLat.lng}" target="_blank" style="
-                                display: block;
-                                margin-top: 8px;
-                                color: #3b82f6;
-                                text-decoration: none;
-                                font-size: 13px;
-                            ">Open in Google Maps &rarr;</a>
-                            <button id="remove-marker-btn" style="
-                                margin-top: 8px;
-                                background: #ef4444;
-                                color: white;
-                                border: none;
-                                padding: 4px 8px;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                width: 100%;
-                            ">Remove</button>
+                        <div style="color: var(--color-text); padding: 8px; min-width: 200px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
+                                <strong style="font-size: 14px;">${t.selectedLocation}</strong>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; height: 120px; background: #eee; position: relative;">
+                                <img src="${tileUrl}" alt="Satellite Preview" style="width: 100%; height: 100%; object-fit: cover;" />
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; text-align: center;">Esri World Imagery</div>
+                            </div>
+
+                            <div style="background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; font-family: monospace; font-size: 11px;">
+                                <div>${t.lat}: ${e.lngLat.lat.toFixed(5)}</div>
+                                <div>${t.lng}: ${e.lngLat.lng.toFixed(5)}</div>
+                            </div>
+
+                            <a href="https://www.google.com/maps?q=${e.lngLat.lat},${e.lngLat.lng}" target="_blank" 
+                               style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #3b82f6; color: white; text-decoration: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 500; transition: opacity 0.2s;">
+                                <span>${t.openInGoogleMaps}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            </a>
+                            
+                            <button id="remove-marker-btn" style="margin-top: 8px; background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 11px; transition: all 0.2s;">
+                                ${t.removeMarker}
+                            </button>
                         </div>
                     `;
 
@@ -304,32 +305,37 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                         });
                     }
 
-                    const popup = new maplibregl.Popup({ offset: 25 })
+                    const popup = new maplibregl.Popup({ offset: 25, closeButton: false })
                         .setDOMContent(popupContent);
 
                     marker.setPopup(popup);
-                    marker.togglePopup(); // Open immediately
-
+                    marker.togglePopup();
                     markers.current.push(marker);
+
+                    // Reset tool
+                    setActiveTool(null);
+                    activeToolRef.current = null;
+                    onToolChangeRef.current(null);
                 }
             });
 
-            // Mouse Move (Ruler & Coords)
-            map.current.on('mousemove', (e) => {
-                onCoordinatesChange({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+            // Mouse Move
+            map.current.on('move', () => {
+                if (map.current && onCoordinatesChange) {
+                    const center = map.current.getCenter();
+                    const zoom = map.current.getZoom();
+                    onCoordinatesChange({ lat: center.lat, lng: center.lng, zoom });
+                }
+            });
 
-                // Update Debug Info
-                if (map.current) {
-                    const layers = map.current.getStyle().layers?.map(l => l.id) || [];
-                    setDebugInfo(prev => ({
-                        ...prev,
-                        zoom: map.current!.getZoom().toFixed(2),
-                        layers: layers
-                    }));
+            map.current.on('mousemove', (e) => {
+                if (onCoordinatesChange && map.current) {
+                    const zoom = map.current.getZoom();
+                    onCoordinatesChange({ lat: e.lngLat.lat, lng: e.lngLat.lng, zoom });
                 }
 
-                // Use activeToolRef
-                if (activeToolRef.current === 'measure-distance' && rulerState.current.active && rulerState.current.points.length === 1) {
+                // Ruler Logic
+                if (rulerState.current.active && rulerState.current.points.length > 0) {
                     rulerState.current.tempPoint = [e.lngLat.lng, e.lngLat.lat];
                     updateRulerLayer();
 
@@ -343,388 +349,300 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
             map.current.on('mouseout', () => {
                 onCoordinatesChange(null);
             });
+
+        } catch (error) {
+            console.error("Error initializing map:", error);
         }
-    }, [onMeasure, onCoordinatesChange]);
 
-    // Handle Style Changes & Layer Architecture
-    useEffect(() => {
+        return () => {
+            map.current?.remove();
+        };
+    }, []);
+
+    // Helper: Update Language
+    const updateLanguage = () => {
         if (!map.current) return;
+        const style = map.current.getStyle();
+        if (!style || !style.layers) return;
 
-        const styleConfig = MAP_STYLES[activeLayer];
+        const langField = currentLang === 'en' ? 'name:en' :
+            currentLang === 'bg' ? 'name:bg' :
+                currentLang === 'it' ? 'name:it' : 'name';
 
-        const updateLayer = () => {
+        style.layers.forEach(layer => {
+            if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+                try {
+                    map.current?.setLayoutProperty(layer.id, 'text-field', [
+                        "coalesce",
+                        ["get", langField],
+                        ["get", "name:en"],
+                        ["get", "name"]
+                    ]);
+                } catch (e) { }
+            }
+        });
+    };
+
+    // Handle Style Changes & Toggles
+    useEffect(() => {
+        if (!map.current || !isMapLoaded) return;
+
+        const initSlots = () => {
             if (!map.current) return;
-
-            const sourceId = 'base-tiles';
-            const layerId = 'base-layer';
-            // Vector Labels
-            const labelsSourceId = 'labels-vector-source';
-            const placeLayerId = 'labels-place-layer';
-            const countryLayerId = 'labels-country-layer';
-
-            // Clean up
-            if (map.current.getLayer(placeLayerId)) map.current.removeLayer(placeLayerId);
-            if (map.current.getLayer(countryLayerId)) map.current.removeLayer(countryLayerId);
-            if (map.current.getSource(labelsSourceId)) map.current.removeSource(labelsSourceId);
-
-            // Clean up old raster labels if they exist
-            if (map.current.getLayer('labels-layer')) map.current.removeLayer('labels-layer');
-            if (map.current.getSource('labels-tiles')) map.current.removeSource('labels-tiles');
-
-            if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-            if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
-
-            // 1. Base Tile Layer
-            let tileUrl = styleConfig.url.replace('{s}', 'a');
-            let attribution = styleConfig.attribution;
-            let maxZoom = styleConfig.maxzoom;
-
-            if (activeLayer === 'satellite') {
-                tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-                attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
-                maxZoom = 19;
-            }
-
-            map.current.addSource(sourceId, {
-                type: 'raster',
-                tiles: [tileUrl],
-                tileSize: 256,
-                attribution: attribution,
-                maxzoom: maxZoom
-            });
-
-            map.current.addLayer({
-                id: layerId,
-                type: 'raster',
-                source: sourceId,
-                minzoom: 0,
-                maxzoom: 22
-            }, map.current.getStyle().layers?.[0]?.id);
-
-            // 3. Vector Labels Overlay (OpenFreeMap)
-            if (showLabels) {
-                map.current.addSource(labelsSourceId, {
-                    type: 'vector',
-                    tiles: ['https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf'],
-                    maxzoom: 14
-                });
-
-                const langKey = currentLang === 'en' ? 'name:en' : currentLang === 'it' ? 'name:it' : 'name:bg';
-                const textField = ['coalesce', ['get', langKey], ['get', 'name:en'], ['get', 'name']];
-
-                // FIX: Ensure text is visible on Relief (usually light)
-                // Satellite is dark -> White text
-                // Relief/Political/Topo are light -> Dark text
-                const isDarkMap = activeLayer === 'satellite';
-                const textColor = isDarkMap ? '#ffffff' : '#333333';
-                const haloColor = isDarkMap ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
-
-                // Country Labels
-                map.current.addLayer({
-                    id: countryLayerId,
-                    type: 'symbol',
-                    source: labelsSourceId,
-                    'source-layer': 'place',
-                    minzoom: 0,
-                    maxzoom: 22,
-                    filter: ['==', 'class', 'country'],
-                    layout: {
-                        'text-field': textField,
-                        'text-font': ['Noto Sans Bold'], // Standard OpenFreeMap font
-                        'text-size': 14,
-                        'text-transform': 'uppercase',
-                        'text-letter-spacing': 0.1
-                    },
-                    paint: {
-                        'text-color': textColor,
-                        'text-halo-color': haloColor,
-                        'text-halo-width': 2
-                    }
-                });
-
-                // City/Place Labels
-                map.current.addLayer({
-                    id: placeLayerId,
-                    type: 'symbol',
-                    source: labelsSourceId,
-                    'source-layer': 'place',
-                    minzoom: 2,
-                    maxzoom: 22,
-                    filter: ['!=', 'class', 'country'],
-                    layout: {
-                        'text-field': textField,
-                        'text-font': ['Noto Sans Regular'], // Standard OpenFreeMap font
-                        'text-size': ['interpolate', ['linear'], ['zoom'], 4, 10, 10, 14],
-                        'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-                        'text-radial-offset': 0.5,
-                        'text-justify': 'auto'
-                    },
-                    paint: {
-                        'text-color': textColor,
-                        'text-halo-color': haloColor,
-                        'text-halo-width': 1.5
-                    }
-                });
-            }
-
-            // Terrain
-            const needsTerrain = ['relief', 'topo', 'satellite'].includes(activeLayer);
-            if (needsTerrain) {
-                if (!map.current.getSource('terrain-source')) {
-                    map.current.addSource('terrain-source', {
-                        type: 'raster-dem',
-                        url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
-                        tileSize: 256
+            const slots = ['slot-base', 'slot-data', 'slot-roads', 'slot-ui'];
+            slots.forEach(slotId => {
+                if (!map.current?.getLayer(slotId)) {
+                    map.current?.addLayer({
+                        id: slotId,
+                        type: 'background',
+                        paint: { 'background-color': 'rgba(0,0,0,0)' }
                     });
                 }
-                map.current.setTerrain({ source: 'terrain-source', exaggeration: 1.5 });
-            } else {
-                map.current.setTerrain(null);
-            }
+            });
         };
 
-        if (map.current.loaded()) {
-            updateLayer();
-        } else {
-            map.current.on('load', updateLayer);
-        }
-
-    }, [activeLayer, showLabels, currentLang]);
-
-    // Handle Graticules (Grid) - Localized & Thicker
-    useEffect(() => {
-        if (!map.current) return;
-
-        const sourceId = 'graticules-source';
-        const layerId = 'graticules-layer';
-        const labelLayerId = 'graticules-labels-layer';
-
-        if (showGraticules) {
-            const getCardinal = (dir: 'N' | 'S' | 'E' | 'W') => {
-                if (currentLang === 'it') {
-                    if (dir === 'W') return 'O';
-                    return dir;
-                }
-                if (currentLang === 'bg') {
-                    if (dir === 'N') return 'С';
-                    if (dir === 'S') return 'Ю';
-                    if (dir === 'E') return 'И';
-                    if (dir === 'W') return 'З';
-                    return dir;
-                }
-                return dir;
-            };
-
-            if (map.current.getSource(sourceId)) {
-                if (map.current.getLayer(labelLayerId)) map.current.removeLayer(labelLayerId);
-                if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-                if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
-            }
-
-            const features = [];
-            const step = 10;
-            const maxLat = 85;
-
-            for (let lng = -180; lng <= 180; lng += step) {
-                const dir = lng > 0 ? 'E' : lng < 0 ? 'W' : '';
-                const suffix = dir ? getCardinal(dir as any) : '';
-                features.push({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: [[lng, -maxLat], [lng, maxLat]] },
-                    properties: { value: `${Math.abs(lng)}°${suffix}` }
-                });
-            }
-
-            for (let lat = -80; lat <= 80; lat += step) {
-                const dir = lat > 0 ? 'N' : lat < 0 ? 'S' : '';
-                const suffix = dir ? getCardinal(dir as any) : '';
-                features.push({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: [[-180, lat], [180, lat]] },
-                    properties: { value: `${Math.abs(lat)}°${suffix}` }
-                });
-            }
-
-            const gridGeoJSON = { type: 'FeatureCollection', features: features };
-
-            map.current.addSource(sourceId, {
-                type: 'geojson',
-                // @ts-ignore
-                data: gridGeoJSON
-            });
-
-            const beforeLayer = map.current.getLayer('labels-place-layer') ? 'labels-place-layer' : undefined;
-
-            const lineColor = activeLayer === 'satellite' ? 'rgba(0, 255, 255, 0.5)' : 'rgba(50, 50, 50, 0.4)';
-
-            map.current.addLayer({
-                id: layerId,
-                type: 'line',
-                source: sourceId,
-                paint: {
-                    'line-color': lineColor,
-                    'line-width': 1.5,
-                    'line-dasharray': [4, 2]
-                }
-            }, beforeLayer);
-
-            const textColor = activeLayer === 'satellite' ? 'rgba(0, 255, 255, 0.9)' : 'rgba(50, 50, 50, 0.9)';
-            const haloColor = activeLayer === 'satellite' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
-
-            map.current.addLayer({
-                id: labelLayerId,
-                type: 'symbol',
-                source: sourceId,
-                layout: {
-                    'symbol-placement': 'line',
-                    'text-field': ['get', 'value'],
-                    'text-size': 11,
-                    'text-offset': [0, 1],
-                    'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-                    'text-allow-overlap': false,
-                    'text-ignore-placement': false
-                },
-                paint: {
-                    'text-color': textColor,
-                    'text-halo-color': haloColor,
-                    'text-halo-width': 1
-                }
-            }, beforeLayer);
-
-        } else {
-            if (map.current.getLayer(labelLayerId)) map.current.removeLayer(labelLayerId);
-            if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-            if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
-        }
-
-    }, [showGraticules, activeLayer, currentLang]);
-
-    // Handle Weather Layers (Rain & Clouds)
-    useEffect(() => {
-        if (!map.current) return;
-
-        const updateWeather = async () => {
+        const updateOverlays = () => {
             if (!map.current) return;
+            initSlots();
 
-            const rainSourceId = 'weather-rain-source';
-            const rainLayerId = 'weather-rain-layer';
-            const cloudSourceId = 'weather-cloud-source';
-            const cloudLayerId = 'weather-cloud-layer';
+            // Graticules
+            const graticulesSourceId = 'graticules-source';
+            const graticulesLayerId = 'graticules-layer';
+            const graticulesLabelLayerId = 'graticules-labels';
+
+            if (map.current.getSource(graticulesSourceId)) {
+                if (map.current.getLayer(graticulesLabelLayerId)) map.current.removeLayer(graticulesLabelLayerId);
+                if (map.current.getLayer(graticulesLayerId)) map.current.removeLayer(graticulesLayerId);
+                map.current.removeSource(graticulesSourceId);
+            }
+
+            if (showGraticules) {
+                const features: any[] = [];
+                for (let lng = -180; lng <= 180; lng += 10) {
+                    features.push({
+                        type: 'Feature',
+                        properties: { value: `${lng}°` },
+                        geometry: { type: 'LineString', coordinates: [[lng, -90], [lng, 90]] }
+                    });
+                }
+                for (let lat = -80; lat <= 80; lat += 10) {
+                    features.push({
+                        type: 'Feature',
+                        properties: { value: `${lat}°` },
+                        geometry: { type: 'LineString', coordinates: [[-180, lat], [180, lat]] }
+                    });
+                }
+
+                map.current.addSource(graticulesSourceId, {
+                    type: 'geojson',
+                    data: { type: 'FeatureCollection', features }
+                });
+
+                map.current.addLayer({
+                    id: graticulesLayerId,
+                    type: 'line',
+                    source: graticulesSourceId,
+                    paint: { 'line-color': '#000000', 'line-opacity': 0.3, 'line-width': 1 }
+                });
+
+                map.current.addLayer({
+                    id: graticulesLabelLayerId,
+                    type: 'symbol',
+                    source: graticulesSourceId,
+                    layout: {
+                        'symbol-placement': 'line',
+                        'text-field': ['get', 'value'],
+                        'text-size': 10,
+                        'text-offset': [0, 1],
+                        'text-font': ['Open Sans Regular']
+                    },
+                    paint: { 'text-color': '#000000', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
+                });
+            }
+
+            // Temperature (NASA GIBS)
+            const tempSourceId = 'temp-source';
+            const tempLayerId = 'temp-layer';
 
             try {
-                // Fetch latest timestamp
-                let latestTs = Math.floor(Date.now() / 1000) - 1000;
-                try {
-                    const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-                    const data = await response.json();
-                    if (data.radar && data.radar.past && data.radar.past.length > 0) {
-                        latestTs = data.radar.past[data.radar.past.length - 1].time;
-                    }
-                } catch (err) {
-                    console.warn("Weather fetch failed, using local time", err);
+                if (map.current.getSource(tempSourceId)) {
+                    if (map.current.getLayer(tempLayerId)) map.current.removeLayer(tempLayerId);
+                    map.current.removeSource(tempSourceId);
                 }
 
-                setDebugInfo(prev => ({ ...prev, weatherTs: latestTs.toString() }));
+                if (showTemperature) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const dateStr = yesterday.toISOString().split('T')[0];
+                    const tileUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${dateStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
 
-                // Insert below labels but above base/grid
-                // Try to find a good insertion point
-                const beforeLayer = map.current.getLayer('labels-country-layer') ? 'labels-country-layer' :
-                    map.current.getLayer('graticules-layer') ? 'graticules-layer' : undefined;
-
-                // --- Rain ---
-                // Always remove first to ensure clean state if toggling rapidly
-                if (map.current.getLayer(rainLayerId)) map.current.removeLayer(rainLayerId);
-                if (map.current.getSource(rainSourceId)) map.current.removeSource(rainSourceId);
-
-                if (showWeather) {
-                    map.current.addSource(rainSourceId, {
+                    map.current.addSource(tempSourceId, {
                         type: 'raster',
-                        tiles: [`https://tile.rainviewer.com/${latestTs}/256/{z}/{x}/{y}/2/1_1.png`],
+                        tiles: [tileUrl],
                         tileSize: 256,
-                        attribution: 'Weather data &copy; RainViewer'
+                        attribution: 'NASA GIBS'
                     });
-                    map.current.addLayer({
-                        id: rainLayerId,
-                        type: 'raster',
-                        source: rainSourceId,
-                        paint: { 'raster-opacity': 0.7 }
-                    }, beforeLayer);
-                }
 
-                // --- Clouds ---
-                if (map.current.getLayer(cloudLayerId)) map.current.removeLayer(cloudLayerId);
-                if (map.current.getSource(cloudSourceId)) map.current.removeSource(cloudSourceId);
-
-                if (showClouds) {
-                    map.current.addSource(cloudSourceId, {
-                        type: 'raster',
-                        tiles: [`https://tile.rainviewer.com/${latestTs}/256/{z}/{x}/{y}/0/0_0.png`],
-                        tileSize: 256
-                    });
                     map.current.addLayer({
-                        id: cloudLayerId,
+                        id: tempLayerId,
                         type: 'raster',
-                        source: cloudSourceId,
+                        source: tempSourceId,
                         paint: { 'raster-opacity': 0.6 }
-                    }, beforeLayer);
+                    });
                 }
+            } catch (e) { console.error("Error adding temp:", e); }
 
-            } catch (e) {
-                console.error("Failed to load weather data", e);
-                setDebugInfo(prev => ({ ...prev, weatherTs: 'ERROR' }));
+            // Borders
+            const bordersSourceId = 'borders-source';
+            const bordersLayerId = 'borders-layer';
+
+            if (map.current.getSource(bordersSourceId)) {
+                if (map.current.getLayer(bordersLayerId)) map.current.removeLayer(bordersLayerId);
+                map.current.removeSource(bordersSourceId);
+            }
+
+            if (showBorders) {
+                map.current.addSource(bordersSourceId, {
+                    type: 'geojson',
+                    data: 'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_countries.geojson'
+                });
+
+                map.current.addLayer({
+                    id: bordersLayerId,
+                    type: 'line',
+                    source: bordersSourceId,
+                    paint: { 'line-color': '#333333', 'line-width': 1.5 }
+                }, 'slot-ui');
             }
         };
 
-        updateWeather();
+        const updateMapState = () => {
+            if (!map.current) return;
 
-    }, [showWeather, showClouds]);
+            const layerConfig = MAP_STYLES[activeLayer];
+            if (!layerConfig) return;
+
+            if (activeLayer !== lastActiveLayer.current) {
+                lastActiveLayer.current = activeLayer;
+
+                if (layerConfig.type === 'style') {
+                    // Vector Style
+                    map.current.setStyle(layerConfig.url);
+                    map.current.once('styledata', () => {
+                        initSlots();
+                        updateLanguage();
+                        updateOverlays();
+
+                        // Restore Ruler
+                        if (!map.current?.getSource('ruler-source')) {
+                            map.current?.addSource('ruler-source', {
+                                type: 'geojson',
+                                data: { type: 'FeatureCollection', features: [] }
+                            });
+                            map.current?.addLayer({
+                                id: 'ruler-line',
+                                type: 'line',
+                                source: 'ruler-source',
+                                paint: { 'line-color': '#3b82f6', 'line-width': 3, 'line-dasharray': [2, 1] },
+                                filter: ['==', '$type', 'LineString']
+                            });
+                            map.current?.addLayer({
+                                id: 'ruler-points',
+                                type: 'circle',
+                                source: 'ruler-source',
+                                paint: { 'circle-radius': 5, 'circle-color': '#3b82f6', 'circle-stroke-width': 2, 'circle-stroke-color': '#ffffff' },
+                                filter: ['==', '$type', 'Point']
+                            });
+                        }
+                    });
+                } else {
+                    // Raster Style
+                    const baseSourceId = 'base-tiles-source';
+                    const baseLayerId = 'base-tiles-layer';
+                    const labelsSourceId = 'labels-source';
+                    const labelsLayerId = 'labels-layer';
+
+                    if (map.current.getLayer(baseLayerId)) map.current.removeLayer(baseLayerId);
+                    if (map.current.getSource(baseSourceId)) map.current.removeSource(baseSourceId);
+                    if (map.current.getLayer(labelsLayerId)) map.current.removeLayer(labelsLayerId);
+                    if (map.current.getSource(labelsSourceId)) map.current.removeSource(labelsSourceId);
+
+                    map.current.addSource(baseSourceId, {
+                        type: 'raster',
+                        tiles: [layerConfig.url],
+                        tileSize: 256,
+                        attribution: layerConfig.attribution
+                    });
+
+                    initSlots();
+
+                    map.current.addLayer({
+                        id: baseLayerId,
+                        type: 'raster',
+                        source: baseSourceId,
+                        paint: { 'raster-opacity': 1 }
+                    }, 'slot-base');
+
+                    if (showLabels && layerConfig.labelsUrl) {
+                        map.current.addSource(labelsSourceId, {
+                            type: 'raster',
+                            tiles: [layerConfig.labelsUrl],
+                            tileSize: 256
+                        });
+                        map.current.addLayer({
+                            id: labelsLayerId,
+                            type: 'raster',
+                            source: labelsSourceId,
+                            paint: { 'raster-opacity': 1 }
+                        }, 'slot-ui');
+                    }
+
+                    updateOverlays();
+                }
+            } else {
+                updateOverlays();
+
+                // Handle Raster Labels Toggle
+                if (layerConfig.type === 'raster') {
+                    const labelsSourceId = 'labels-source';
+                    const labelsLayerId = 'labels-layer';
+                    if (showLabels && layerConfig.labelsUrl) {
+                        if (!map.current.getLayer(labelsLayerId)) {
+                            if (!map.current.getSource(labelsSourceId)) {
+                                map.current.addSource(labelsSourceId, {
+                                    type: 'raster',
+                                    tiles: [layerConfig.labelsUrl],
+                                    tileSize: 256
+                                });
+                            }
+                            map.current.addLayer({
+                                id: labelsLayerId,
+                                type: 'raster',
+                                source: labelsSourceId,
+                                paint: { 'raster-opacity': 1 }
+                            }, 'slot-ui');
+                        }
+                    } else {
+                        if (map.current.getLayer(labelsLayerId)) map.current.removeLayer(labelsLayerId);
+                    }
+                }
+            }
+        };
+
+        updateMapState();
+
+    }, [activeLayer, showLabels, showBorders, showGraticules, showTemperature, isMapLoaded]);
+
+    // Language Update Effect
+    useEffect(() => {
+        if (isMapLoaded) {
+            updateLanguage();
+        }
+    }, [currentLang, isMapLoaded, activeLayer]);
 
     return (
-        <div className="map-wrap">
-            <div
-                ref={mapContainer}
-                className={`map ${activeTool ? `tool-${activeTool}` : ''}`}
-            />
-
-            {/* Diagnostic Panel */}
-            <div style={{
-                position: 'absolute',
-                bottom: '100px',
-                left: '10px',
-                background: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '10px',
-                fontSize: '10px',
-                fontFamily: 'monospace',
-                zIndex: 9999,
-                pointerEvents: 'none',
-                borderRadius: '4px'
-            }}>
-                <div>Zoom: {debugInfo.zoom}</div>
-                <div>Weather TS: {debugInfo.weatherTs}</div>
-                <div>Layers ({debugInfo.layers.length}):</div>
-                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
-                    {debugInfo.layers.map(l => <div key={l}>{l}</div>)}
-                </div>
-            </div>
-
-            {/* Custom Zoom Controls */}
-            <div className="custom-zoom-controls">
-                <button
-                    className="zoom-btn"
-                    onClick={() => map.current?.zoomIn()}
-                    title="Zoom In"
-                >
-                    +
-                </button>
-                <button
-                    className="zoom-btn"
-                    onClick={() => map.current?.zoomOut()}
-                    title="Zoom Out"
-                >
-                    -
-                </button>
-            </div>
+        <div className="map-wrapper">
+            <div ref={mapContainer} className="map-container" />
         </div>
     );
 });
