@@ -3,203 +3,261 @@
     {
       "code": "BG",
       "count": 10187,
-      "sizeKB": 1183
+      "sizeKB": 1110,
+      "chunks": 1
     },
     {
       "code": "IT",
       "count": 71528,
-      "sizeKB": 5692
+      "sizeKB": 5667,
+      "chunks": 1
     },
     {
       "code": "DE",
       "count": 93810,
-      "sizeKB": 7772
+      "sizeKB": 7687,
+      "chunks": 1
     },
     {
       "code": "FR",
       "count": 118697,
-      "sizeKB": 11659
+      "sizeKB": 11388,
+      "chunks": 1
     },
     {
       "code": "GB",
       "count": 55620,
-      "sizeKB": 4035
+      "sizeKB": 4018,
+      "chunks": 1
     },
     {
       "code": "ES",
       "count": 39191,
-      "sizeKB": 3737
+      "sizeKB": 3697,
+      "chunks": 1
+    },
+    {
+      "code": "GR",
+      "count": 16120,
+      "sizeKB": 2028,
+      "chunks": 1
     },
     {
       "code": "RO",
       "count": 21484,
-      "sizeKB": 2107
+      "sizeKB": 2076,
+      "chunks": 1
+    },
+    {
+      "code": "RS",
+      "count": 9714,
+      "sizeKB": 874,
+      "chunks": 1
     },
     {
       "code": "MK",
       "count": 2870,
-      "sizeKB": 330
+      "sizeKB": 305,
+      "chunks": 1
+    },
+    {
+      "code": "TR",
+      "count": 57036,
+      "sizeKB": 5397,
+      "chunks": 1
     },
     {
       "code": "AT",
       "count": 23600,
-      "sizeKB": 1879
+      "sizeKB": 1861,
+      "chunks": 1
     },
     {
       "code": "CH",
       "count": 16002,
-      "sizeKB": 1381
+      "sizeKB": 1360,
+      "chunks": 1
     },
     {
       "code": "NL",
       "count": 8201,
-      "sizeKB": 679
+      "sizeKB": 667,
+      "chunks": 1
     },
     {
       "code": "BE",
       "count": 13337,
-      "sizeKB": 1089
+      "sizeKB": 1085,
+      "chunks": 1
     },
     {
       "code": "PL",
       "count": 50898,
-      "sizeKB": 4401
+      "sizeKB": 4350,
+      "chunks": 1
     },
     {
       "code": "CZ",
       "count": 22970,
-      "sizeKB": 2138
+      "sizeKB": 2107,
+      "chunks": 1
     },
     {
       "code": "SK",
       "count": 8070,
-      "sizeKB": 795
+      "sizeKB": 784,
+      "chunks": 1
     },
     {
       "code": "HU",
       "count": 16233,
-      "sizeKB": 1458
+      "sizeKB": 1432,
+      "chunks": 1
     },
     {
       "code": "HR",
       "count": 12228,
-      "sizeKB": 1081
+      "sizeKB": 1070,
+      "chunks": 1
     },
     {
       "code": "SI",
       "count": 6891,
-      "sizeKB": 835
+      "sizeKB": 770,
+      "chunks": 1
     },
     {
       "code": "AL",
       "count": 5174,
-      "sizeKB": 565
+      "sizeKB": 558,
+      "chunks": 1
     },
     {
       "code": "PT",
       "count": 22113,
-      "sizeKB": 1717
+      "sizeKB": 1706,
+      "chunks": 1
     },
     {
       "code": "IE",
       "count": 12271,
-      "sizeKB": 966
+      "sizeKB": 959,
+      "chunks": 1
     },
     {
       "code": "DK",
       "count": 7401,
-      "sizeKB": 602
+      "sizeKB": 598,
+      "chunks": 1
     },
     {
       "code": "SE",
       "count": 32999,
-      "sizeKB": 2775
+      "sizeKB": 2739,
+      "chunks": 1
     },
     {
       "code": "NO",
       "count": 14313,
-      "sizeKB": 1148
+      "sizeKB": 1139,
+      "chunks": 1
     },
     {
       "code": "FI",
       "count": 29753,
-      "sizeKB": 2396
+      "sizeKB": 2369,
+      "chunks": 1
     },
     {
       "code": "RU",
       "count": 206565,
-      "sizeKB": 22579
+      "sizeKB": 20924,
+      "chunks": 2
     },
     {
       "code": "UA",
       "count": 35412,
-      "sizeKB": 4422
+      "sizeKB": 4132,
+      "chunks": 1
     },
     {
       "code": "BY",
       "count": 26661,
-      "sizeKB": 2932
+      "sizeKB": 2712,
+      "chunks": 1
     },
     {
       "code": "MD",
       "count": 1857,
-      "sizeKB": 250
+      "sizeKB": 237,
+      "chunks": 1
     },
     {
       "code": "US",
       "count": 249587,
-      "sizeKB": 22311
+      "sizeKB": 22104,
+      "chunks": 2
     },
     {
       "code": "CA",
       "count": 25480,
-      "sizeKB": 1957
+      "sizeKB": 1942,
+      "chunks": 1
     },
     {
       "code": "MX",
       "count": 284517,
-      "sizeKB": 24317
+      "sizeKB": 24226,
+      "chunks": 2
     },
     {
       "code": "BR",
       "count": 78064,
-      "sizeKB": 6966
+      "sizeKB": 6884,
+      "chunks": 1
     },
     {
       "code": "AR",
       "count": 15490,
-      "sizeKB": 1345
+      "sizeKB": 1339,
+      "chunks": 1
     },
     {
       "code": "AU",
       "count": 20294,
-      "sizeKB": 1519
+      "sizeKB": 1509,
+      "chunks": 1
     },
     {
       "code": "NZ",
       "count": 3418,
-      "sizeKB": 256
+      "sizeKB": 255,
+      "chunks": 1
     },
     {
       "code": "JP",
       "count": 55495,
-      "sizeKB": 6826
+      "sizeKB": 6185,
+      "chunks": 1
     },
     {
       "code": "KR",
       "count": 69629,
-      "sizeKB": 7342
+      "sizeKB": 6979,
+      "chunks": 1
     },
     {
       "code": "CN",
       "count": 898463,
-      "sizeKB": 95214
+      "sizeKB": 89797,
+      "chunks": 6
     },
     {
       "code": "IN",
       "count": 565688,
-      "sizeKB": 44150
+      "sizeKB": 43776,
+      "chunks": 3
     }
   ],
-  "totalEntries": 3252461
+  "totalEntries": 3335331
 }

@@ -149,17 +149,37 @@ async function main() {
         const entries = await processCountry(cc);
         if (!entries) continue;
 
-        // Write country file
-        const outputPath = path.join(OUTPUT_DIR, `${cc.toLowerCase()}.json`);
-        fs.writeFileSync(outputPath, JSON.stringify(entries));
+        // Check size and split if needed
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB safety limit
+        const jsonStr = JSON.stringify(entries);
 
-        const sizeKB = Math.round(fs.statSync(outputPath).size / 1024);
-        console.log(`${entries.length} places (${sizeKB} KB)`);
+        let chunks = 1;
+
+        if (jsonStr.length > MAX_SIZE) {
+            chunks = Math.ceil(jsonStr.length / MAX_SIZE);
+            const chunkSize = Math.ceil(entries.length / chunks);
+
+            console.log(`  Splitting ${cc} into ${chunks} parts...`);
+
+            for (let i = 0; i < chunks; i++) {
+                const chunk = entries.slice(i * chunkSize, (i + 1) * chunkSize);
+                const chunkPath = path.join(OUTPUT_DIR, `${cc.toLowerCase()}-${i + 1}.json`);
+                fs.writeFileSync(chunkPath, JSON.stringify(chunk));
+            }
+        } else {
+            // Write single file
+            const outputPath = path.join(OUTPUT_DIR, `${cc.toLowerCase()}.json`);
+            fs.writeFileSync(outputPath, jsonStr);
+        }
+
+        const sizeKB = Math.round(jsonStr.length / 1024);
+        console.log(`${entries.length} places (${sizeKB} KB) ${chunks > 1 ? `[${chunks} chunks]` : ''}`);
 
         index.countries.push({
             code: cc,
             count: entries.length,
-            sizeKB
+            sizeKB,
+            chunks
         });
         index.totalEntries += entries.length;
     }

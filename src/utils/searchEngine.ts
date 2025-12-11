@@ -36,7 +36,7 @@ let isInitialized = false;
 let isInitializing = false;
 let initPromise: Promise<void> | null = null;
 let loadedCountries: Set<string> = new Set();
-let countryBboxes: Record<string, [number, number, number, number]> = {}; // [minLat, minLng, maxLat, maxLng]
+let countryBboxes: Record<string, number[]> = {}; // [minLat, minLng, maxLat, maxLng, chunkCount?]
 
 // Convert compact GeoNames format to GeoLocation
 // Entry format: { id, n (name), a (ascii), c (country), p (pop), lat, lng, alt (alternateNames array) }
@@ -116,20 +116,45 @@ export async function checkAndLoadCountries(centerLat: number, centerLng: number
     for (const [code, bbox] of Object.entries(countryBboxes)) {
         if (loadedCountries.has(code)) continue;
 
-        // Check if map center is inside or close to bounding box
-        if (centerLat >= bbox[0] && centerLat <= bbox[2] &&
-            centerLng >= bbox[1] && centerLng <= bbox[3]) {
+        const minLat = bbox[0];
+        const minLng = bbox[1];
+        const maxLat = bbox[2];
+        const maxLng = bbox[3];
+        // Check for chunk count (5th element in bbox array)
+        const chunkCount = bbox.length > 4 ? bbox[4] : 1;
 
-            console.log(`[SearchEngine] Viewport in ${code}, loading village data...`);
+        // Check if map center is inside or close to bounding box
+        if (centerLat >= minLat && centerLat <= maxLat &&
+            centerLng >= minLng && centerLng <= maxLng) {
+
+            console.log(`[SearchEngine] Viewport in ${code}, loading village data${chunkCount > 1 ? ` (${chunkCount} chunks)` : ''}...`);
             loadedCountries.add(code); // Mark as loading immediately to prevent duplicate requests
 
             try {
-                const response = await fetch(`/data/villages/${code.toLowerCase()}.json`);
-                if (!response.ok) throw new Error('File not found');
+                if (chunkCount > 1) {
+                    // Load chunks in parallel
+                    const promises = [];
+                    for (let i = 1; i <= chunkCount; i++) {
+                        promises.push(fetch(`/data/villages/${code.toLowerCase()}-${i}.json`).then(res => {
+                            if (!res.ok) throw new Error(`Chunk ${i} not found`);
+                            return res.json();
+                        }));
+                    }
 
-                const rawData = await response.json();
-                const locations = rawData.map(convertGeoNamesEntry);
-                indexLocations(locations);
+                    const chunksData = await Promise.all(promises);
+                    chunksData.forEach(rawData => {
+                        const locations = rawData.map(convertGeoNamesEntry);
+                        indexLocations(locations);
+                    });
+                } else {
+                    // Load single file
+                    const response = await fetch(`/data/villages/${code.toLowerCase()}.json`);
+                    if (!response.ok) throw new Error('File not found');
+
+                    const rawData = await response.json();
+                    const locations = rawData.map(convertGeoNamesEntry);
+                    indexLocations(locations);
+                }
             } catch (e) {
                 console.warn(`[SearchEngine] Failed to load data for ${code}:`, e);
                 loadedCountries.delete(code); // Retry later if failed
