@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapContainer.css';
+import './Popup.css';
 import { MAP_STYLES, type MapStyleId } from './mapStyles';
 import * as turf from '@turf/turf';
-import type { Language } from '../UI/LanguageSwitcher';
+import type { Language } from '../UI/Overlay';
 import { translations } from '../../utils/translations';
+import { checkAndLoadCountries } from '../../utils/searchEngine';
 
 export interface MapContainerProps {
     onMeasure: (measurement: string) => void;
@@ -13,7 +15,8 @@ export interface MapContainerProps {
     showGraticules: boolean;
     showLabels: boolean;
     showBorders: boolean;
-    showTemperature: boolean;
+    selectedAdminCountry: string | null;
+
     currentLang: Language;
     onCoordinatesChange: (coords: { lat: number; lng: number; zoom: number } | null) => void;
     activeToolRef: React.MutableRefObject<string | null>;
@@ -21,7 +24,7 @@ export interface MapContainerProps {
 }
 
 export interface MapRef {
-    flyToLocation: (center: [number, number], zoom: number, bbox?: [number, number, number, number]) => void;
+    flyToLocation: (center: [number, number], zoom: number, bbox?: [number, number, number, number], name?: string) => void;
     setTool: (tool: string) => void;
     clearMeasurement: () => void;
     getMap: () => maplibregl.Map | null;
@@ -34,7 +37,8 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
     showGraticules,
     showLabels,
     showBorders,
-    showTemperature,
+    selectedAdminCountry,
+
     currentLang,
     onCoordinatesChange,
     activeToolRef,
@@ -52,6 +56,159 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         points: [],
         tempPoint: null
     });
+
+    // Vector Label Layer Configuration - Single source of truth for all label types
+    const VECTOR_LABEL_LAYERS = [
+        // Water name labels (ocean and sea) - uses 'water_name' source-layer
+        {
+            id: 'vector-labels-ocean',
+            class: 'ocean',
+            sourceLayer: 'water_name',
+            minzoom: undefined,
+            maxzoom: 6,
+            fontSize: ['interpolate', ['linear'], ['zoom'], 1, 14, 4, 20] as any,
+            font: 'Noto Sans Italic',
+            textTransform: 'uppercase' as const,
+            letterSpacing: 0.3,
+            haloWidth: 2,
+            opacity: 0.8,
+            textColor: '#4a90d9' // Blue text for water bodies
+        },
+        {
+            id: 'vector-labels-sea',
+            class: 'sea',
+            sourceLayer: 'water_name',
+            minzoom: 3,
+            maxzoom: undefined,
+            fontSize: ['interpolate', ['linear'], ['zoom'], 3, 11, 6, 16] as any,
+            font: 'Noto Sans Italic',
+            textTransform: undefined,
+            letterSpacing: 0.15,
+            haloWidth: 1.5,
+            opacity: 0.8,
+            textColor: '#4a90d9' // Blue text for water bodies
+        },
+        {
+            id: 'vector-labels-continent',
+            class: 'continent',
+            minzoom: undefined,
+            maxzoom: 4,
+            fontSize: 18,
+            font: 'Noto Sans Bold',
+            textTransform: 'uppercase' as const,
+            letterSpacing: 0.2,
+            haloWidth: 2,
+            opacity: ['interpolate', ['linear'], ['zoom'], 1, 1, 4, 0] as any
+        },
+        {
+            id: 'vector-labels-country',
+            class: 'country',
+            minzoom: 2,
+            maxzoom: undefined,
+            fontSize: ['interpolate', ['linear'], ['zoom'], 2, 10, 6, 14] as any,
+            font: 'Noto Sans Regular',
+            textTransform: 'uppercase' as const,
+            letterSpacing: 0.1,
+            haloWidth: 2,
+            opacity: undefined
+        },
+        {
+            id: 'vector-labels-state',
+            class: 'state',
+            minzoom: 4,
+            maxzoom: undefined,
+            fontSize: 12,
+            font: 'Noto Sans Regular',
+            textTransform: undefined,
+            letterSpacing: undefined,
+            haloWidth: 1.5,
+            opacity: 0.8
+        },
+        {
+            id: 'vector-labels-city',
+            class: 'city',
+            minzoom: 9,
+            maxzoom: undefined,
+            fontSize: ['interpolate', ['linear'], ['zoom'], 7, 10, 12, 16] as any,
+            font: 'Noto Sans Regular',
+            textTransform: undefined,
+            letterSpacing: undefined,
+            haloWidth: 1.5,
+            opacity: undefined
+        },
+        {
+            id: 'vector-labels-town',
+            class: 'town',
+            minzoom: 11,
+            maxzoom: undefined,
+            fontSize: 11,
+            font: 'Noto Sans Regular',
+            textTransform: undefined,
+            letterSpacing: undefined,
+            haloWidth: 1,
+            opacity: undefined
+        },
+        {
+            id: 'vector-labels-village',
+            class: 'village',
+            minzoom: 13,
+            maxzoom: undefined,
+            fontSize: 10,
+            font: 'Noto Sans Regular',
+            textTransform: undefined,
+            letterSpacing: undefined,
+            haloWidth: 1,
+            opacity: 0.9
+        }
+    ];
+
+    // Helper to add all vector label layers
+    const addVectorLabelLayers = (
+        mapInstance: maplibregl.Map,
+        sourceId: string,
+        langField: string,
+        textColor: string,
+        haloColor: string
+    ) => {
+        VECTOR_LABEL_LAYERS.forEach(layer => {
+            if (mapInstance.getLayer(layer.id)) return; // Skip if already exists
+
+            const layoutProps: any = {
+                'text-field': ['coalesce', ['get', langField], ['get', 'name:en'], ['get', 'name']],
+                'text-size': layer.fontSize,
+                'text-font': [layer.font]
+            };
+            if (layer.textTransform) layoutProps['text-transform'] = layer.textTransform;
+            if (layer.letterSpacing) layoutProps['text-letter-spacing'] = layer.letterSpacing;
+
+            // Use layer-specific text color if defined (e.g., blue for oceans), otherwise use default
+            const layerTextColor = (layer as any).textColor || textColor;
+
+            const paintProps: any = {
+                'text-color': layerTextColor,
+                'text-halo-color': haloColor,
+                'text-halo-width': layer.haloWidth
+            };
+            if (layer.opacity !== undefined) paintProps['text-opacity'] = layer.opacity;
+
+            // Use layer-specific source-layer if defined (water_name for oceans), otherwise default to 'place'
+            const sourceLayer = (layer as any).sourceLayer || 'place';
+
+            const layerDef: any = {
+                id: layer.id,
+                type: 'symbol',
+                source: sourceId,
+                'source-layer': sourceLayer,
+                filter: ['==', 'class', layer.class],
+                layout: layoutProps,
+                paint: paintProps
+            };
+            if (layer.minzoom !== undefined) layerDef.minzoom = layer.minzoom;
+            if (layer.maxzoom !== undefined) layerDef.maxzoom = layer.maxzoom;
+
+            mapInstance.addLayer(layerDef);
+        });
+    };
 
     // Helper to update ruler layer
     const updateRulerLayer = () => {
@@ -102,11 +259,56 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
     };
 
     useImperativeHandle(ref, () => ({
-        flyToLocation: (center, zoom, bbox) => {
+        flyToLocation: (center, zoom, bbox, name) => {
             if (bbox) {
                 map.current?.fitBounds(bbox as [number, number, number, number], { padding: 50 });
             } else {
                 map.current?.flyTo({ center, zoom });
+
+                // Smart Snap: If name is provided, try to snap to the exact label position after arrival
+                if (name && map.current) {
+                    const snapToLabel = () => {
+                        const mapInstance = map.current;
+                        if (!mapInstance) return;
+
+                        // Project center to pixels to define a search window
+                        // We search a generous area as label might be offset from center
+                        const point = mapInstance.project(center as [number, number]); // center is [lng, lat]
+                        const searchBox: [maplibregl.PointLike, maplibregl.PointLike] = [
+                            [point.x - 100, point.y - 100],
+                            [point.x + 100, point.y + 100]
+                        ];
+
+                        const features = mapInstance.queryRenderedFeatures(searchBox, {
+                            layers: [
+                                'vector-labels-city',
+                                'vector-labels-town',
+                                'vector-labels-village',
+                                'vector-labels-capital' // If exists
+                            ]
+                        });
+
+                        const targetName = name.toLowerCase();
+
+                        // Find a feature that matches the name
+                        const match = features.find(f => {
+                            const p = f.properties || {};
+                            return (p.name && p.name.toLowerCase() === targetName) ||
+                                (p['name:en'] && p['name:en'].toLowerCase() === targetName) ||
+                                (p['name:bg'] && p['name:bg'].toLowerCase() === targetName) ||
+                                (p['name:it'] && p['name:it'].toLowerCase() === targetName);
+                        });
+
+                        if (match && match.geometry.type === 'Point') {
+                            const coords = (match.geometry as any).coordinates; // [lng, lat]
+                            // Gently ease to the REAL label position
+                            mapInstance.easeTo({ center: coords as [number, number], duration: 600, easing: (t) => t * (2 - t) });
+                        }
+                    };
+
+                    // Execute snap after move ends (flight completes)
+                    map.current.once('moveend', snapToLabel);
+                }
             }
         },
         setTool: (tool) => {
@@ -131,8 +333,10 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                             essential: true
                         });
 
-                        // Add a blue dot marker
-                        new maplibregl.Marker({ color: '#3b82f6' })
+                        // Add a minimalistic blue dot marker
+                        const bluePin = document.createElement('div');
+                        bluePin.style.cssText = 'width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(59,130,246,0.4);';
+                        new maplibregl.Marker({ element: bluePin, anchor: 'center' })
                             .setLngLat([longitude, latitude])
                             .addTo(map.current!);
                     },
@@ -157,8 +361,13 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         }
 
         try {
-            // Initialize with empty style to avoid flash of wrong style/colorful map
-            const initialStyle = { version: 8, sources: {}, layers: [] };
+            // Initialize with style that includes glyphs for vector label fonts
+            const initialStyle = {
+                version: 8,
+                sources: {},
+                layers: [],
+                glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf'
+            };
 
             map.current = new maplibregl.Map({
                 container: mapContainer.current,
@@ -251,7 +460,11 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                 }
 
                 if (activeToolRef.current === 'marker') {
-                    const marker = new maplibregl.Marker({ color: '#ef4444' })
+                    // Create minimalistic red pin (no transition to prevent wiggle during pan)
+                    const redPin = document.createElement('div');
+                    redPin.className = 'custom-map-pin';
+                    redPin.style.cssText = 'width: 14px; height: 14px; background: #ef4444; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(239,68,68,0.4); cursor: pointer;';
+                    const marker = new maplibregl.Marker({ element: redPin, anchor: 'center' })
                         .setLngLat(e.lngLat)
                         .addTo(map.current);
 
@@ -269,48 +482,92 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     const popupContent = document.createElement('div');
                     popupContent.className = 'glass-popup-content';
                     popupContent.innerHTML = `
-                        <div style="color: var(--color-text); padding: 8px; min-width: 200px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
-                                <strong style="font-size: 14px;">${t.selectedLocation}</strong>
-                            </div>
-                            
-                            <div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; height: 120px; background: #eee; position: relative;">
-                                <img src="${tileUrl}" alt="Satellite Preview" style="width: 100%; height: 100%; object-fit: cover;" />
-                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; text-align: center;">Esri World Imagery</div>
-                            </div>
+                        <div class="popup-header">
+                            <div class="popup-tag-dot"></div>
+                            <span class="popup-title">${t.selectedLocation}</span>
+                        </div>
+                        
+                        <div class="popup-preview">
+                            <img src="${tileUrl}" alt="Satellite Preview" />
+                        </div>
 
-                            <div style="background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; font-family: monospace; font-size: 11px;">
-                                <div>${t.lat}: ${e.lngLat.lat.toFixed(5)}</div>
-                                <div>${t.lng}: ${e.lngLat.lng.toFixed(5)}</div>
-                            </div>
+                        <div class="popup-coords">
+                            <div>${t.lat}: ${e.lngLat.lat.toFixed(5)}</div>
+                            <div>${t.lng}: ${e.lngLat.lng.toFixed(5)}</div>
+                        </div>
 
-                            <a href="https://www.google.com/maps?q=${e.lngLat.lat},${e.lngLat.lng}" target="_blank" 
-                               style="display: flex; align-items: center; justify-content: center; gap: 6px; background: #3b82f6; color: white; text-decoration: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 500; transition: opacity 0.2s;">
+                        <div class="popup-actions">
+                            <a href="https://www.google.com/maps?q=${e.lngLat.lat},${e.lngLat.lng}" target="_blank" class="popup-btn-primary">
                                 <span>${t.openInGoogleMaps}</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                             </a>
                             
-                            <button id="remove-marker-btn" style="margin-top: 8px; background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 11px; transition: all 0.2s;">
+                            <button id="remove-marker-btn" class="popup-btn-danger">
                                 ${t.removeMarker}
                             </button>
                         </div>
                     `;
 
+                    // Create popup without binding to marker - gives us full control
+                    const popup = new maplibregl.Popup({ offset: 25, closeButton: false, closeOnClick: false })
+                        .setDOMContent(popupContent)
+                        .setLngLat(e.lngLat)
+                        .addTo(map.current);
+
+                    markers.current.push(marker);
+
+                    // Track popup state
+                    let isOpen = true;
+                    let isAnimating = false;
+
+                    // Helper function to close popup with animation
+                    const closePopupWithAnimation = () => {
+                        if (!isOpen || isAnimating) return;
+                        isAnimating = true;
+                        popupContent.classList.add('popup-closing');
+                        setTimeout(() => {
+                            popup.remove();
+                            isOpen = false;
+                            isAnimating = false;
+                        }, 200);
+                    };
+
+                    // Handle marker click - toggle popup with animation
+                    redPin.addEventListener('click', (evt) => {
+                        evt.stopPropagation();
+                        if (isOpen) {
+                            closePopupWithAnimation();
+                        } else if (!isAnimating) {
+                            popupContent.classList.remove('popup-closing');
+                            popup.setLngLat(marker.getLngLat()).addTo(map.current!);
+                            isOpen = true;
+                        }
+                    });
+
+                    // Handle map click - close popup with animation
+                    const mapClickHandler = (clickEvent: maplibregl.MapMouseEvent) => {
+                        // Check if click is not on the popup or marker
+                        const popupEl = popup.getElement();
+                        const target = clickEvent.originalEvent.target as Element;
+                        if (popupEl && !popupEl.contains(target) && !redPin.contains(target)) {
+                            closePopupWithAnimation();
+                        }
+                    };
+                    map.current.on('click', mapClickHandler);
+
+                    // Update remove button handler to also use animation
                     const removeBtn = popupContent.querySelector('#remove-marker-btn');
                     if (removeBtn) {
                         removeBtn.addEventListener('click', () => {
-                            marker.remove();
-                            markers.current = markers.current.filter(m => m !== marker);
+                            popupContent.classList.add('popup-closing');
+                            setTimeout(() => {
+                                popup.remove();
+                                marker.remove();
+                                markers.current = markers.current.filter(m => m !== marker);
+                                map.current?.off('click', mapClickHandler);
+                            }, 200);
                         });
                     }
-
-                    const popup = new maplibregl.Popup({ offset: 25, closeButton: false })
-                        .setDOMContent(popupContent);
-
-                    marker.setPopup(popup);
-                    marker.togglePopup();
-                    markers.current.push(marker);
 
                     // Reset tool
                     setActiveTool(null);
@@ -320,6 +577,18 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
             });
 
             // Mouse Move
+            map.current.on('moveend', () => {
+                if (map.current) {
+                    const center = map.current.getCenter();
+                    const zoom = map.current.getZoom();
+                    checkAndLoadCountries(center.lat, center.lng, zoom);
+
+                    if (onCoordinatesChange) {
+                        onCoordinatesChange({ lat: center.lat, lng: center.lng, zoom });
+                    }
+                }
+            });
+
             map.current.on('move', () => {
                 if (map.current && onCoordinatesChange) {
                     const center = map.current.getCenter();
@@ -346,9 +615,8 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                 }
             });
 
-            map.current.on('mouseout', () => {
-                onCoordinatesChange(null);
-            });
+            // Removed mouseout handler - it was causing coordinates to disappear 
+            // when hovering over UI elements positioned over the map
 
         } catch (error) {
             console.error("Error initializing map:", error);
@@ -359,28 +627,58 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         };
     }, []);
 
-    // Helper: Update Language
+    // Helper: Update Language on Vector Labels
     const updateLanguage = () => {
         if (!map.current) return;
-        const style = map.current.getStyle();
-        if (!style || !style.layers) return;
 
+        // Map language codes to OSM name fields
         const langField = currentLang === 'en' ? 'name:en' :
             currentLang === 'bg' ? 'name:bg' :
                 currentLang === 'it' ? 'name:it' : 'name';
 
-        style.layers.forEach(layer => {
-            if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+        // Update all vector label layers
+        const vectorLabelLayerIds = [
+            'vector-labels-ocean',
+            'vector-labels-sea',
+            'vector-labels-continent',
+            'vector-labels-country',
+            'vector-labels-state',
+            'vector-labels-city',
+            'vector-labels-town',
+            'vector-labels-village'
+        ];
+
+        vectorLabelLayerIds.forEach(layerId => {
+            if (map.current?.getLayer(layerId)) {
                 try {
-                    map.current?.setLayoutProperty(layer.id, 'text-field', [
-                        "coalesce",
-                        ["get", langField],
-                        ["get", "name:en"],
-                        ["get", "name"]
+                    map.current.setLayoutProperty(layerId, 'text-field', [
+                        'coalesce',
+                        ['get', langField],
+                        ['get', 'name:en'],
+                        ['get', 'name']
                     ]);
-                } catch (e) { }
+                } catch (e) {
+                    console.warn(`Could not update language for layer ${layerId}:`, e);
+                }
             }
         });
+
+        // Also update any existing style layers that have text-field
+        const style = map.current.getStyle();
+        if (style?.layers) {
+            style.layers.forEach(layer => {
+                if (layer.type === 'symbol' && layer.layout?.['text-field'] && !vectorLabelLayerIds.includes(layer.id)) {
+                    try {
+                        map.current?.setLayoutProperty(layer.id, 'text-field', [
+                            'coalesce',
+                            ['get', langField],
+                            ['get', 'name:en'],
+                            ['get', 'name']
+                        ]);
+                    } catch (e) { /* ignore */ }
+                }
+            });
+        }
     };
 
     // Handle Style Changes & Toggles
@@ -389,7 +687,8 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
 
         const initSlots = () => {
             if (!map.current) return;
-            const slots = ['slot-base', 'slot-data', 'slot-roads', 'slot-ui'];
+            // Order matters: base -> data -> overlays -> labels (on top)
+            const slots = ['slot-base', 'slot-data', 'slot-overlays', 'slot-labels'];
             slots.forEach(slotId => {
                 if (!map.current?.getLayer(slotId)) {
                     map.current?.addLayer({
@@ -454,65 +753,107 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                         'text-field': ['get', 'value'],
                         'text-size': 10,
                         'text-offset': [0, 1],
-                        'text-font': ['Open Sans Regular']
+                        'text-font': ['Noto Sans Regular']
                     },
                     paint: { 'text-color': '#000000', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }
                 });
             }
 
-            // Temperature (NASA GIBS)
-            const tempSourceId = 'temp-source';
-            const tempLayerId = 'temp-layer';
 
-            try {
-                if (map.current.getSource(tempSourceId)) {
-                    if (map.current.getLayer(tempLayerId)) map.current.removeLayer(tempLayerId);
-                    map.current.removeSource(tempSourceId);
-                }
 
-                if (showTemperature) {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const dateStr = yesterday.toISOString().split('T')[0];
-                    const tileUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${dateStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
-
-                    map.current.addSource(tempSourceId, {
-                        type: 'raster',
-                        tiles: [tileUrl],
-                        tileSize: 256,
-                        attribution: 'NASA GIBS'
-                    });
-
-                    map.current.addLayer({
-                        id: tempLayerId,
-                        type: 'raster',
-                        source: tempSourceId,
-                        paint: { 'raster-opacity': 0.6 }
-                    });
-                }
-            } catch (e) { console.error("Error adding temp:", e); }
-
-            // Borders
+            // Borders - Using OpenMapTiles vector tiles for comprehensive coverage
             const bordersSourceId = 'borders-source';
-            const bordersLayerId = 'borders-layer';
+            const bordersCountryLayerId = 'borders-country-layer';
+            const bordersStateLayerId = 'borders-state-layer';
 
-            if (map.current.getSource(bordersSourceId)) {
-                if (map.current.getLayer(bordersLayerId)) map.current.removeLayer(bordersLayerId);
-                map.current.removeSource(bordersSourceId);
-            }
+            // Clean up existing border layers
+            if (map.current.getLayer(bordersCountryLayerId)) map.current.removeLayer(bordersCountryLayerId);
+            if (map.current.getLayer(bordersStateLayerId)) map.current.removeLayer(bordersStateLayerId);
+            if (map.current.getSource(bordersSourceId)) map.current.removeSource(bordersSourceId);
 
             if (showBorders) {
-                map.current.addSource(bordersSourceId, {
+                // OpenMapTiles vector source - same as labels, contains admin boundaries
+                if (!map.current.getSource(bordersSourceId)) {
+                    map.current.addSource(bordersSourceId, {
+                        type: 'vector',
+                        url: 'https://tiles.openfreemap.org/planet'
+                    });
+                }
+
+                // Country borders (admin_level 2) - more pronounced
+                map.current.addLayer({
+                    id: bordersCountryLayerId,
+                    type: 'line',
+                    source: bordersSourceId,
+                    'source-layer': 'boundary',
+                    filter: ['all',
+                        ['==', 'admin_level', 2],
+                        ['==', 'maritime', 0]
+                    ],
+                    paint: {
+                        'line-color': '#1e293b',
+                        'line-width': ['interpolate', ['linear'], ['zoom'],
+                            2, 1.5,
+                            6, 2.5,
+                            10, 3
+                        ],
+                        'line-opacity': 0.9
+                    }
+                }, 'slot-overlays');
+
+                // State/Province borders (admin_level 4) - slimmer with subtle dash
+                map.current.addLayer({
+                    id: bordersStateLayerId,
+                    type: 'line',
+                    source: bordersSourceId,
+                    'source-layer': 'boundary',
+                    filter: ['all',
+                        ['==', 'admin_level', 4],
+                        ['==', 'maritime', 0]
+                    ],
+                    minzoom: 4,
+                    paint: {
+                        'line-color': '#475569',
+                        'line-width': ['interpolate', ['linear'], ['zoom'],
+                            4, 0.8,
+                            8, 1.5,
+                            12, 2
+                        ],
+                        'line-opacity': 0.7,
+                        'line-dasharray': [4, 2]
+                    }
+                }, 'slot-overlays');
+            }
+
+            // Global Admin Regions (Dynamic)
+            const globalAdminSourceId = 'global-admin-source';
+            const globalAdminLayerId = 'global-admin-layer';
+
+            if (map.current.getSource(globalAdminSourceId)) {
+                if (map.current.getLayer(globalAdminLayerId)) map.current.removeLayer(globalAdminLayerId);
+                map.current.removeSource(globalAdminSourceId);
+            }
+
+            if (selectedAdminCountry) {
+                // GeoBoundaries URL Structure (using media proxy for LFS support):
+                // https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/{ISO}/ADM1/geoBoundaries-{ISO}-ADM1.geojson
+                const url = `https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/${selectedAdminCountry}/ADM1/geoBoundaries-${selectedAdminCountry}-ADM1.geojson`;
+
+                map.current.addSource(globalAdminSourceId, {
                     type: 'geojson',
-                    data: 'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_countries.geojson'
+                    data: url
                 });
 
                 map.current.addLayer({
-                    id: bordersLayerId,
+                    id: globalAdminLayerId,
                     type: 'line',
-                    source: bordersSourceId,
-                    paint: { 'line-color': '#333333', 'line-width': 1.5 }
-                }, 'slot-ui');
+                    source: globalAdminSourceId,
+                    paint: {
+                        'line-color': '#e11d48',
+                        'line-width': 2,
+                        'line-dasharray': [2, 2]
+                    }
+                }, 'slot-overlays');
             }
         };
 
@@ -556,17 +897,19 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                         }
                     });
                 } else {
-                    // Raster Style
+                    // Raster Style with Raster Labels
                     const baseSourceId = 'base-tiles-source';
                     const baseLayerId = 'base-tiles-layer';
                     const labelsSourceId = 'labels-source';
                     const labelsLayerId = 'labels-layer';
 
+                    // Clean up existing layers
                     if (map.current.getLayer(baseLayerId)) map.current.removeLayer(baseLayerId);
-                    if (map.current.getSource(baseSourceId)) map.current.removeSource(baseSourceId);
                     if (map.current.getLayer(labelsLayerId)) map.current.removeLayer(labelsLayerId);
+                    if (map.current.getSource(baseSourceId)) map.current.removeSource(baseSourceId);
                     if (map.current.getSource(labelsSourceId)) map.current.removeSource(labelsSourceId);
 
+                    // Add base raster tiles
                     map.current.addSource(baseSourceId, {
                         type: 'raster',
                         tiles: [layerConfig.url],
@@ -583,18 +926,44 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                         paint: { 'raster-opacity': 1 }
                     }, 'slot-base');
 
-                    if (showLabels && layerConfig.labelsUrl) {
-                        map.current.addSource(labelsSourceId, {
-                            type: 'raster',
-                            tiles: [layerConfig.labelsUrl],
-                            tileSize: 256
+                    // Add VECTOR labels for multilingual support
+                    if (showLabels) {
+                        const vectorSourceId = 'vector-labels-source';
+
+                        // Clean up old vector label layers first
+                        const vectorLayerIds = [
+                            'vector-labels-ocean',
+                            'vector-labels-sea',
+                            'vector-labels-continent',
+                            'vector-labels-country',
+                            'vector-labels-state',
+                            'vector-labels-city',
+                            'vector-labels-town',
+                            'vector-labels-village'
+                        ];
+                        vectorLayerIds.forEach(id => {
+                            if (map.current?.getLayer(id)) map.current.removeLayer(id);
                         });
-                        map.current.addLayer({
-                            id: labelsLayerId,
-                            type: 'raster',
-                            source: labelsSourceId,
-                            paint: { 'raster-opacity': 1 }
-                        }, 'slot-ui');
+
+                        if (!map.current.getSource(vectorSourceId)) {
+                            // OpenMapTiles vector tiles - contains name, name:en, name:bg, etc.
+                            map.current.addSource(vectorSourceId, {
+                                type: 'vector',
+                                url: 'https://tiles.openfreemap.org/planet'
+                            });
+                        }
+
+                        // Get language field based on current language
+                        const langField = currentLang === 'en' ? 'name:en' :
+                            currentLang === 'bg' ? 'name:bg' :
+                                currentLang === 'it' ? 'name:it' : 'name';
+
+                        const isDarkMap = layerConfig.isDark;
+                        const textColor = isDarkMap ? '#ffffff' : '#1a1a2e';
+                        const haloColor = isDarkMap ? '#000000' : '#ffffff';
+
+                        // Add all vector label layers using helper
+                        addVectorLabelLayers(map.current, vectorSourceId, langField, textColor, haloColor);
                     }
 
                     updateOverlays();
@@ -602,28 +971,46 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
             } else {
                 updateOverlays();
 
-                // Handle Raster Labels Toggle
+                // Handle Vector Labels Toggle (when layer didn't change)
                 if (layerConfig.type === 'raster') {
-                    const labelsSourceId = 'labels-source';
-                    const labelsLayerId = 'labels-layer';
-                    if (showLabels && layerConfig.labelsUrl) {
-                        if (!map.current.getLayer(labelsLayerId)) {
-                            if (!map.current.getSource(labelsSourceId)) {
-                                map.current.addSource(labelsSourceId, {
-                                    type: 'raster',
-                                    tiles: [layerConfig.labelsUrl],
-                                    tileSize: 256
-                                });
-                            }
-                            map.current.addLayer({
-                                id: labelsLayerId,
-                                type: 'raster',
-                                source: labelsSourceId,
-                                paint: { 'raster-opacity': 1 }
-                            }, 'slot-ui');
+                    const vectorSourceId = 'vector-labels-source';
+                    const vectorLayerIds = [
+                        'vector-labels-ocean',
+                        'vector-labels-sea',
+                        'vector-labels-continent',
+                        'vector-labels-country',
+                        'vector-labels-state',
+                        'vector-labels-city',
+                        'vector-labels-town',
+                        'vector-labels-village'
+                    ];
+
+                    if (showLabels) {
+                        // Check if we need to add the source
+                        if (!map.current.getSource(vectorSourceId)) {
+                            map.current.addSource(vectorSourceId, {
+                                type: 'vector',
+                                url: 'https://tiles.openfreemap.org/planet'
+                            });
+                        }
+
+                        // Add layers if they don't exist - use helper for all 6 layers
+                        if (!map.current.getLayer('vector-labels-country')) {
+                            const langField = currentLang === 'en' ? 'name:en' :
+                                currentLang === 'bg' ? 'name:bg' :
+                                    currentLang === 'it' ? 'name:it' : 'name';
+
+                            const isDarkMap = layerConfig.isDark;
+                            const textColor = isDarkMap ? '#ffffff' : '#1a1a2e';
+                            const haloColor = isDarkMap ? '#000000' : '#ffffff';
+
+                            addVectorLabelLayers(map.current, vectorSourceId, langField, textColor, haloColor);
                         }
                     } else {
-                        if (map.current.getLayer(labelsLayerId)) map.current.removeLayer(labelsLayerId);
+                        // Remove vector label layers
+                        vectorLayerIds.forEach(id => {
+                            if (map.current?.getLayer(id)) map.current.removeLayer(id);
+                        });
                     }
                 }
             }
@@ -631,7 +1018,7 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
 
         updateMapState();
 
-    }, [activeLayer, showLabels, showBorders, showGraticules, showTemperature, isMapLoaded]);
+    }, [activeLayer, showLabels, showBorders, selectedAdminCountry, showGraticules, isMapLoaded, currentLang]);
 
     // Language Update Effect
     useEffect(() => {
@@ -642,7 +1029,14 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
 
     return (
         <div className="map-wrapper">
-            <div ref={mapContainer} className="map-container" />
+            <div
+                ref={mapContainer}
+                className="map-container"
+                style={{
+                    opacity: isMapLoaded ? 1 : 0,
+                    transition: 'opacity 1.5s ease-in-out'
+                }}
+            />
         </div>
     );
 });

@@ -1,16 +1,20 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import MapContainer from './components/Map/MapContainer';
 import type { MapRef } from './components/Map/MapContainer';
 import Overlay from './components/UI/Overlay';
 import type { MapStyleId } from './components/Map/mapStyles';
 import { translations } from './utils/translations';
-import type { Language } from './components/UI/LanguageSwitcher';
+import type { Language } from './components/UI/Overlay';
+import { usePreventUIZoom } from './hooks/usePreventUIZoom';
 import './styles/glassmorphism.css';
 import './App.css';
 
 import { MAP_STYLES } from './components/Map/mapStyles';
 
 function App() {
+  // Prevent zoom on UI elements while allowing map zoom
+  usePreventUIZoom();
+
   const mapRef = useRef<MapRef>(null);
   const [measurement, setMeasurement] = useState('');
   const [currentLang, setCurrentLang] = useState<Language>('en');
@@ -18,7 +22,8 @@ function App() {
   const [showGraticules, setShowGraticules] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showBorders, setShowBorders] = useState(false);
-  const [showTemperature, setShowTemperature] = useState(false);
+  const [selectedAdminCountry, setSelectedAdminCountry] = useState<string | null>(null);
+
   const [isDark, setIsDark] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -32,29 +37,29 @@ function App() {
     activeToolRef.current = tool;
   };
 
-  const handleToolChange = (tool: string | null) => {
+  const handleToolChange = useCallback((tool: string | null) => {
     setActiveTool(tool);
     activeToolRef.current = tool;
     mapRef.current?.setTool(tool || 'none');
-  };
+  }, []);
 
-  const handleClearMeasurement = () => {
+  const handleClearMeasurement = useCallback(() => {
     setMeasurement('');
     mapRef.current?.clearMeasurement();
-  };
+  }, []);
 
-  const handleLayerChange = (layer: MapStyleId) => {
+  const handleLayerChange = useCallback((layer: MapStyleId) => {
     setCurrentLayer(layer);
     setIsDark(MAP_STYLES[layer].isDark);
-  };
+  }, []);
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback(() => {
     mapRef.current?.getMap()?.zoomIn();
-  };
+  }, []);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     mapRef.current?.getMap()?.zoomOut();
-  };
+  }, []);
 
   return (
     <div className="App">
@@ -65,7 +70,8 @@ function App() {
         showGraticules={showGraticules}
         showLabels={showLabels}
         showBorders={showBorders}
-        showTemperature={showTemperature}
+        selectedAdminCountry={selectedAdminCountry}
+
         currentLang={currentLang}
         onCoordinatesChange={setCoordinates}
         activeToolRef={activeToolRef}
@@ -86,12 +92,13 @@ function App() {
         onToggleLabels={() => setShowLabels(!showLabels)}
         showBorders={showBorders}
         onToggleBorders={() => setShowBorders(!showBorders)}
-        showTemperature={showTemperature}
-        onToggleTemperature={() => setShowTemperature(!showTemperature)}
+        selectedAdminCountry={selectedAdminCountry}
+        onSelectAdminCountry={setSelectedAdminCountry}
+
         activeTool={activeTool}
         isMapDark={isDark}
         coordinates={coordinates}
-        onLocationSelect={(location) => mapRef.current?.flyToLocation(location.center, location.zoom, location.bbox)}
+        onLocationSelect={(location) => mapRef.current?.flyToLocation(location.center, location.zoom, location.bbox, location.name)}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onLocateMe={() => mapRef.current?.locateMe()}

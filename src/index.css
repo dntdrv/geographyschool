@@ -31,14 +31,16 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  touch-action: none;
-  /* Prevent pinch-zoom on page */
+  /* Use manipulation instead of none - allows scroll/pan but no pinch zoom */
+  touch-action: manipulation;
   overscroll-behavior: none;
-  /* Prevent pull-to-refresh/bounce */
   overflow: hidden;
-  /* Prevent scrolling */
   background-color: var(--color-background);
   color: var(--color-text);
+  /* Prevent double-tap zoom on iOS */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 h1 {
@@ -46,7 +48,8 @@ h1 {
   line-height: 1.1;
 }
 
-button {
+/* Global button styles - EXCLUDING specific UI components */
+button:not(.zoom-btn):not(.dock-btn):not(.dropdown-trigger):not(.close-panel-btn):not(.measurement-close-btn) {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -58,26 +61,73 @@ button {
   transition: border-color 0.25s;
 }
 
-button:hover {
+button:hover:not(.zoom-btn):not(.dock-btn):not(.dropdown-trigger):not(.close-panel-btn):not(.measurement-close-btn) {
   border-color: var(--color-accent);
 }
 
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:focus:not(.zoom-btn),
+button:focus-visible:not(.zoom-btn) {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
 
-  @media (prefers-color-scheme: light) {
-    :root {
-      color: #213547;
-      background-color: #ffffff;
-    }
+/* FORCE no outline on zoom buttons - global override */
+.zoom-btn,
+.zoom-btn:focus,
+.zoom-btn:focus-visible,
+.zoom-btn:active,
+button.zoom-btn:focus,
+button.zoom-btn:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
 
-    a:hover {
-      color: #747bff;
-    }
-
-    button {
-      background-color: #f9f9f9;
-    }
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
   }
+
+  a:hover {
+    color: #747bff;
+  }
+
+  button:not(.zoom-btn):not(.dock-btn):not(.dropdown-trigger):not(.close-panel-btn):not(.measurement-close-btn) {
+    background-color: #f9f9f9;
+  }
+}
+
+/* ==============================================
+   ICON HOVER COLORS
+   Blue for regular icons, red for X buttons
+   ============================================== */
+
+/* Search icon wrapper - centered and blue hover */
+.search-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  color: #9CA3AF;
+}
+
+.search-icon-wrapper:hover {
+  color: #3B82F6;
+}
+
+/* X button red hover - search bar and language pill */
+.search-icon-wrapper:has(svg[data-lucide="x"]):hover,
+.search-icon-wrapper:hover svg[class*="lucide-x"] {
+  color: #EF4444 !important;
+}
+
+/* Language pill icon hover */
+.lang-pill:hover {
+  color: #3B82F6;
+}
+
+/* Hide scrollbar for search results (Chrome/Safari) */
+.search-results-container::-webkit-scrollbar {
+  display: none;
 }

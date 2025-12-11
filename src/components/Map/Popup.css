@@ -1,0 +1,207 @@
+.maplibregl-popup-content {
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 32px !important;
+    box-shadow: none !important;
+    /* Prevent zoom/scroll on the popup itself */
+    touch-action: none;
+}
+
+.maplibregl-popup-tip {
+    border-top-color: #FFFFFF !important;
+    margin-top: -4px;
+}
+
+/* Glass Content Wrapper */
+.glass-popup-content {
+    background: var(--surface-glass-ultra);
+    backdrop-filter: var(--blur-ultra);
+    -webkit-backdrop-filter: var(--blur-ultra);
+    border-radius: 32px;
+    padding: 16px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    min-width: 240px;
+    font-family: 'Inter', sans-serif;
+    animation: popupFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: bottom center;
+}
+
+@keyframes popupFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Fade-out Animation (reversed fade-in) */
+@keyframes popupFadeOut {
+    0% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0.9) translateY(10px);
+    }
+}
+
+.glass-popup-content.popup-closing {
+    animation: popupFadeOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Header Section */
+.popup-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.popup-tag-dot {
+    width: 8px;
+    height: 8px;
+    background: #EF4444;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.popup-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Image Preview */
+.popup-preview {
+    margin-bottom: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100px;
+    background: #F3F4F6;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.popup-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.popup-preview:hover img {
+    transform: scale(1.05);
+}
+
+.popup-source-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    color: white;
+    font-size: 10px;
+    padding: 4px 8px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Coordinates Box */
+.popup-coords {
+    background: #F9FAFB;
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11px;
+    color: #4B5563;
+    border: 1px solid #F3F4F6;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Action Buttons - M3 Expressive Style */
+.popup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.popup-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #3B82F6;
+    color: white !important;
+    text-decoration: none;
+    padding: 0 16px;
+    height: 52px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.popup-btn-primary span,
+.popup-btn-primary svg {
+    color: white !important;
+}
+
+.popup-btn-primary:hover {
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    color: white !important;
+}
+
+.popup-btn-primary:hover span,
+.popup-btn-primary:hover svg {
+    color: white !important;
+}
+
+.popup-btn-danger,
+.glass-popup-content .popup-btn-danger,
+.popup-actions .popup-btn-danger,
+button.popup-btn-danger,
+#remove-marker-btn {
+    background: #EF4444 !important;
+    background-color: #EF4444 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0 16px !important;
+    height: 48px !important;
+    border-radius: 9999px !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+    margin-top: 4px !important;
+    opacity: 1 !important;
+}
+
+.popup-btn-danger:hover,
+.glass-popup-content .popup-btn-danger:hover,
+#remove-marker-btn:hover {
+    background: #DC2626 !important;
+    background-color: #DC2626 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+    color: white !important;
+}

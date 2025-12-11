@@ -1,35 +1,95 @@
+/* ==============================================
+   ZOOM CONTROL - Fluid Pill Design System
+   Circle buttons with visible icons
+   ============================================== */
+
 .zoom-control-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    align-items: center;
 }
 
 .zoom-btn {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    /* Subtle shadow that doesn't overlap adjacent buttons */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
     cursor: pointer;
-    color: var(--text-primary);
-    border-radius: 50% !important;
-    /* Glassmorphism styling */
-    background: var(--glass-surface, rgba(255, 255, 255, 0.7));
-    backdrop-filter: var(--glass-blur, blur(20px) saturate(180%));
-    -webkit-backdrop-filter: var(--glass-blur, blur(20px) saturate(180%));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
-    box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.1));
-    padding: 0;
-    transition: all 0.2s ease;
+    color: #4B5563;
+    /* FORCE remove all outlines - !important to override everything */
+    outline: none !important;
 }
 
+/* Hover color change - blue highlight */
 .zoom-btn:hover {
-    background: var(--glass-surface-hover, rgba(255, 255, 255, 0.9));
-    transform: scale(1.05);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    color: #3B82F6;
 }
 
+/* FORCE remove blue focus outline - multiple selectors with !important */
+.zoom-btn:focus,
+.zoom-btn:focus-visible,
 .zoom-btn:active {
-    transform: scale(0.95);
+    outline: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ICON SIZE - 22px to match language button */
+.zoom-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+}
+
+/* Click trace animation - triggered via .tracing class */
+/* Animation starts from visible and traces - no clipping */
+.zoom-btn.tracing svg path,
+.zoom-btn.tracing svg line,
+.zoom-btn.tracing svg polyline,
+.zoom-btn.tracing svg circle,
+.zoom-btn.tracing svg rect {
+    animation: click-trace 1.5s ease-in-out forwards;
+}
+
+@keyframes click-trace {
+    0% {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 0;
+        stroke-opacity: 1;
+    }
+
+    30% {
+        stroke-dashoffset: 50;
+        stroke-opacity: 0.6;
+    }
+
+    100% {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 0;
+        stroke-opacity: 1;
+    }
+}
+
+
+/* ==============================================
+   MOBILE
+   ============================================== */
+@media (max-width: 768px) {
+    .zoom-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .zoom-btn svg {
+        width: 20px;
+        height: 20px;
+    }
 }

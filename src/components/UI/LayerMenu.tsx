@@ -1,8 +1,11 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Check } from 'lucide-react';
 import './LayerMenu.css';
+import { springs, variants } from '../../utils/animations';
 import type { MapStyleId } from '../Map/mapStyles';
 import { MAP_STYLES } from '../Map/mapStyles';
+import { COUNTRIES } from '../../utils/countries';
 
 interface LayerMenuProps {
     activeLayer: MapStyleId;
@@ -13,18 +16,12 @@ interface LayerMenuProps {
     onToggleLabels: () => void;
     showBorders: boolean;
     onToggleBorders: () => void;
-    showTemperature: boolean;
-    onToggleTemperature: () => void;
+
     translations: any;
     isDark: boolean;
+    selectedAdminCountry: string | null;
+    onSelectAdminCountry: (country: string | null) => void;
 }
-
-const spring: any = {
-    type: "spring",
-    stiffness: 180,
-    damping: 12,
-    mass: 1
-};
 
 const LayerMenu: React.FC<LayerMenuProps> = ({
     activeLayer,
@@ -35,11 +32,22 @@ const LayerMenu: React.FC<LayerMenuProps> = ({
     onToggleLabels,
     showBorders,
     onToggleBorders,
-    showTemperature,
-    onToggleTemperature,
+
     translations,
-    // isDark is intentionally ignored for UI styling as per "Glass Panels NEVER CHANGE COLOR" rule
+    selectedAdminCountry,
+    onSelectAdminCountry,
 }) => {
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const toggleDropdown = () => {
+        if (document.startViewTransition) {
+            document.startViewTransition(() => {
+                setIsDropdownOpen(prev => !prev);
+            });
+        } else {
+            setIsDropdownOpen(prev => !prev);
+        }
+    };
 
     return (
         <div className="layer-menu-container">
@@ -47,20 +55,22 @@ const LayerMenu: React.FC<LayerMenuProps> = ({
             <div className="zone-a-selector">
                 <div className="segmented-control">
                     {Object.entries(MAP_STYLES).map(([id]) => (
-                        <div
+                        <motion.div
                             key={id}
                             className={`segment-item ${activeLayer === id ? 'active' : ''}`}
                             onClick={() => onLayerChange(id as MapStyleId)}
+                            whileHover={variants.subtle.hover}
+                            whileTap={variants.subtle.tap}
                         >
                             {activeLayer === id && (
                                 <motion.div
                                     layoutId="active-pill"
                                     className="active-pill-bg"
-                                    transition={spring}
+                                    transition={springs.snappy}
                                 />
                             )}
                             <span className="segment-label">{translations.layers[id]}</span>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
@@ -76,7 +86,7 @@ const LayerMenu: React.FC<LayerMenuProps> = ({
                 />
                 <ToggleItem
                     label={translations.overlays.labels}
-                    isOn={showLabels}
+                    isOn={!showLabels}
                     onToggle={onToggleLabels}
                 />
                 <ToggleItem
@@ -84,13 +94,80 @@ const LayerMenu: React.FC<LayerMenuProps> = ({
                     isOn={showBorders}
                     onToggle={onToggleBorders}
                 />
-                <ToggleItem
-                    label={translations.overlays.temperature}
-                    isOn={showTemperature}
-                    onToggle={onToggleTemperature}
-                />
-            </div>
-        </div>
+
+
+                <div className="glass-divider"></div>
+
+                {/* Country Selector Dropdown */}
+                <div className="dropdown-section">
+                    <span className="section-label">{translations.overlays.administrativeRegions}</span>
+                    <div className="custom-dropdown">
+                        <motion.button
+                            className="dropdown-trigger"
+                            onClick={toggleDropdown}
+                            whileHover={variants.subtle.hover}
+                            whileTap={variants.subtle.tap}
+                        >
+                            <span className="selected-text">
+                                {selectedAdminCountry
+                                    ? COUNTRIES.find(c => c.code === selectedAdminCountry)?.name
+                                    : translations.overlays.none}
+                            </span>
+                            <motion.div
+                                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                                transition={springs.snappy}
+                            >
+                                <ChevronDown size={14} />
+                            </motion.div>
+                        </motion.button>
+
+                        <AnimatePresence>
+                            {isDropdownOpen && (
+                                <motion.div
+                                    className="dropdown-menu-list glass-panel"
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                >
+                                    <motion.div
+                                        className={`dropdown-item ${!selectedAdminCountry ? 'selected' : ''}`}
+                                        onClick={() => {
+                                            onSelectAdminCountry(null);
+                                            setIsDropdownOpen(false);
+                                        }}
+                                        whileHover={variants.subtle.hover}
+                                        whileTap={variants.subtle.tap}
+                                    >
+                                        <span>{translations.overlays.none}</span>
+                                        {!selectedAdminCountry && <Check size={14} />}
+                                    </motion.div>
+                                    <div className="dropdown-separator"></div>
+                                    {COUNTRIES.map((country) => (
+                                        <motion.div
+                                            key={country.code}
+                                            className={`dropdown-item ${selectedAdminCountry === country.code ? 'selected' : ''}`}
+                                            onClick={() => {
+                                                onSelectAdminCountry(country.code);
+                                                setIsDropdownOpen(false);
+                                            }}
+                                            whileHover={variants.subtle.hover}
+                                            whileTap={variants.subtle.tap}
+                                        >
+                                            <span className="country-row">
+                                                {/* Flag emoji removed as per request */}
+                                                {country.name}
+                                            </span>
+                                            {selectedAdminCountry === country.code && <Check size={14} />}
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div >
+                </div >
+            </div >
+        </div >
     );
 };
 
@@ -99,20 +176,20 @@ const ToggleItem = ({ label, isOn, onToggle }: { label: string, isOn: boolean, o
     return (
         <motion.div
             className="toggle-row"
-            whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.4)" }}
-            transition={spring}
             onClick={onToggle}
+            whileHover={variants.subtle.hover}
+            whileTap={variants.subtle.tap}
         >
             <span className="toggle-label">{label}</span>
             <div className={`toggle-switch-container ${isOn ? 'on' : 'off'}`}>
                 <motion.div
                     className="toggle-handle"
                     layout
-                    transition={spring}
+                    transition={springs.snappy}
                 />
             </div>
         </motion.div>
     );
 };
 
-export default LayerMenu;
+export default memo(LayerMenu);

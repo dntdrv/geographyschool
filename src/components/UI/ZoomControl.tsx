@@ -1,55 +1,62 @@
+import React from 'react';
 import { Plus, Minus, Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './ZoomControl.css';
+import { springs, variants } from '../../utils/animations';
 
 interface ZoomControlProps {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onLocateMe?: () => void;
+    translations?: any;
 }
 
-const spring: any = {
-    type: "spring",
-    stiffness: 300,
-    damping: 20
-};
+/**
+ * ZoomControl - Rounded pill buttons for map interaction
+ * Order from top to bottom: Zoom+, Zoom-, Locate
+ */
+const ZoomControl: React.FC<ZoomControlProps> = ({ onZoomIn, onZoomOut, onLocateMe, translations }) => {
+    const t = translations?.controls || { zoomIn: 'Zoom In', zoomOut: 'Zoom Out', locateMe: 'Locate Me' };
 
-const ZoomControl: React.FC<ZoomControlProps> = ({ onZoomIn, onZoomOut, onLocateMe }) => {
     return (
-        <div className="zoom-control-container">
+        <div className="zoom-control-container" role="group" aria-label="Map zoom controls">
+            <motion.button
+                className="zoom-btn"
+                onClick={onZoomIn}
+                whileTap={variants.popOut.tap}
+                whileHover={variants.popOut.hover}
+                transition={springs.soft}
+                title={t.zoomIn}
+                aria-label={t.zoomIn}
+            >
+                <Plus size={22} />
+            </motion.button>
+
+            <motion.button
+                className="zoom-btn"
+                onClick={onZoomOut}
+                whileTap={variants.popOut.tap}
+                whileHover={variants.popOut.hover}
+                transition={springs.soft}
+                title={t.zoomOut}
+                aria-label={t.zoomOut}
+            >
+                <Minus size={22} />
+            </motion.button>
+
             {onLocateMe && (
                 <motion.button
-                    className="zoom-btn glass-panel"
+                    className="zoom-btn"
                     onClick={onLocateMe}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={spring}
-                    title="Locate Me"
+                    whileTap={variants.popOut.tap}
+                    whileHover={variants.popOut.hover}
+                    transition={springs.soft}
+                    title={t.locateMe}
+                    aria-label={t.locateMe}
                 >
-                    <Navigation size={24} />
+                    <Navigation size={22} />
                 </motion.button>
             )}
-
-            <motion.button
-                className="zoom-btn glass-panel"
-                onClick={onZoomIn}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-                transition={spring}
-                title="Zoom In"
-            >
-                <Plus size={20} />
-            </motion.button>
-            <motion.button
-                className="zoom-btn glass-panel"
-                onClick={onZoomOut}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-                transition={spring}
-                title="Zoom Out"
-            >
-                <Minus size={20} />
-            </motion.button>
         </div>
     );
 };

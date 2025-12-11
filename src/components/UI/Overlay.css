@@ -1,4 +1,8 @@
-/* Overlay Container - Full Screen Pointer Events Pass-through */
+/* ==============================================
+   OVERLAY - RECTIFICATION BLUEPRINT
+   Contrast, color theory, and spatial composition fixes
+   ============================================== */
+
 .overlay-container {
     position: absolute;
     top: 0;
@@ -9,146 +13,240 @@
     z-index: 1000;
 }
 
-/* Enable pointer events for actual UI elements */
 .overlay-container>* {
     pointer-events: auto;
 }
 
-/* Top Center Group */
+/* ==============================================
+   HOVER EFFECTS
+   All hover/pop-out effects are now handled by Framer Motion
+   variants in src/utils/animations.ts (popOut, subtle)
+   This ensures a single source of truth for all animations.
+   ============================================== */
+
+/* ==============================================
+   TOP CENTER: Search + Language
+   
+   Layout Strategy for Centering:
+   - top-center-group is centered horizontally.
+   - It wraps the Search Bar (320px).
+   - Language Button is ABSOLUTELY positioned to the right.
+   - This ensures the Search Bar is perfectly centered on screen, 
+     ignoring the asymmetric language button width.
+   ============================================== */
+
 .top-center-group {
     position: absolute;
     top: 24px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    align-items: center;
     z-index: 1010;
     width: auto;
-    max-width: 90vw;
+    /* Do NOT use flex gap separation here, we use absolute positioning for language */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    /* Container is passthrough */
 }
 
 .search-container-wrapper {
-    width: 320px;
-    max-width: 60vw;
+    /* Let the component define width (320px) */
+    width: auto;
+    position: relative;
+    pointer-events: auto;
+    /* Enable Interaction */
 }
 
 .lang-container-wrapper {
-    position: relative;
-    flex-shrink: 0;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 16px;
+    /* Gap */
+    /* Ensure it doesn't wrap */
+    white-space: nowrap;
+    pointer-events: auto;
+    /* CRITICAL: Enable Interaction */
 }
 
+
+/* ==============================================
+   ICON BUTTON - 48x48 Circle
+   ============================================== */
 .icon-btn {
     width: 48px;
-    /* Match search bar height */
     height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    /* Shadow Resting */
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
     cursor: pointer;
-    padding: 0;
+    color: #4B5563;
+    /* Grey text */
+    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
 
-.icon-btn.rounded-full {
-    border-radius: 9999px !important;
+.icon-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.18);
+    /* Shadow Floating */
+    color: #111827;
 }
 
-.lang-options {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    /* Align right since it's on the right side now */
-    margin-top: 8px;
-    width: 140px;
-    padding: 8px;
+.icon-btn:active {
+    transform: translateY(0) scale(0.96);
+}
+
+/* ==============================================
+   LANGUAGE MENU - Contrast Fixed
+   ============================================== */
+.lang-morph-container {
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.18);
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: auto;
+    /* CRITICAL: Enable Interaction */
 }
 
+/* Language List Items */
 .lang-options button {
-    background: transparent;
+    height: 48px;
     border: none;
-    padding: 8px 12px;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 8px;
-    font-size: 14px;
+    background: transparent;
+    border-radius: 9999px;
+    font-family: var(--font-family);
+    font-size: 15px;
     font-weight: 500;
-    color: var(--text-primary);
-    transition: background-color 0.2s;
+    color: #1F2937;
+    /* Dark Grey Inactive */
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+    outline: none !important;
 }
 
+.lang-options button:focus,
+.lang-options button:focus-visible {
+    outline: none !important;
+}
+
+.lang-options button:hover {
+    background: #F3F4F6;
+    /* Light Grey Hover */
+}
+
+/* Active State - Blue bg, White text */
 .lang-options button.active {
-    background: rgba(0, 0, 0, 0.1);
-    font-weight: 700;
+    background: #3B82F6;
+    color: #FFFFFF;
 }
 
-/* Bottom Left Stack: Coordinates, Legend */
+/* ==============================================
+   BOTTOM LEFT: Coordinates & Scale Combined
+   ============================================== */
 .bottom-left-stack {
     position: absolute;
     bottom: 24px;
-    left: 16px;
-    /* Adjusted to prevent cut-off */
+    left: 24px;
     display: flex;
     flex-direction: column;
-    /* Stack from top down */
-    gap: 16px;
-    /* Margin between items */
     align-items: flex-start;
     z-index: 1010;
+    pointer-events: none;
 }
 
-/* Bottom Right Stack: Zoom, Locate */
+/* Combined Coordinates + Scale Pill */
+.coordinates-pill {
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.coordinates-pill .coords-text {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Scale below coords */
+.scale-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.scale-bar {
+    height: 3px;
+    background: #374151;
+    border-radius: 1.5px;
+    min-width: 40px;
+    max-width: 100px;
+}
+
+.scale-label {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11px;
+    color: #6B7280;
+    font-weight: 500;
+}
+
+/* ==============================================
+   BOTTOM RIGHT: Floating Button Dock
+   ============================================== */
 .bottom-right-stack {
     position: absolute;
     bottom: 24px;
     right: 24px;
     display: flex;
-    flex-direction: column-reverse;
-    gap: 16px;
-    align-items: flex-end;
-    z-index: 1010;
-}
-
-/* Measurement Pill (Ruler Menu) */
-.measurement-pill {
-    position: absolute;
-    bottom: calc(80px + 20px);
-    /* Above Dock (approx 80px) */
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 36px 12px 20px;
-    /* Extra right padding for X */
-    display: flex;
+    flex-direction: column;
+    gap: 8px;
     align-items: center;
-    font-weight: 600;
     z-index: 1005;
-    min-width: 150px;
-    justify-content: center;
-    top: auto;
-    /* Override previous top positioning */
+    pointer-events: auto;
 }
 
-.clear-btn-absolute {
+
+
+/* Always visible Hide UI button */
+.hide-ui-btn-container {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.1);
-    border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
+    bottom: 24px;
+    right: 24px;
+    z-index: 1006;
+    pointer-events: auto;
 }
 
-/* Bottom Center: Dock Wrapper */
+/* ==============================================
+   BOTTOM CENTER: Dock (Shrink & Contrast Fix)
+   ============================================== */
 .dock-wrapper {
     position: absolute;
     bottom: 24px;
@@ -157,262 +255,267 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
     z-index: 1010;
-    width: auto;
-    max-width: 90vw;
+    pointer-events: auto;
 }
 
-/* The Glass Dock (Compact Mode) */
-.glass-dock {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    /* Reduced padding */
-    gap: 8px;
-    height: 44px;
-    /* Compact height */
-    border-radius: 999px !important;
-}
-
-.dock-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 6px;
-    /* Reduced padding */
-    border-radius: 50%;
-    transition: all 0.2s;
+.morphing-dock {
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.7;
-    width: 32px;
-    height: 32px;
+    overflow: hidden;
+    transform-origin: bottom center;
+    /* GPU acceleration for smooth morphing */
+    will-change: width, height, border-radius, transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
+.dock-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+}
+
+.dock-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #4B5563;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Ensure dock icons are visible */
+.dock-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+}
+
+/* Blue hover for regular icons - NO background */
 .dock-btn:hover {
-    opacity: 1;
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.2);
+    color: #3B82F6;
 }
 
+/* Icon trace animation - handled by global index.css */
 .dock-btn.active {
-    opacity: 1;
-    color: #000;
-    background: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: transparent;
+    color: #3B82F6;
+    outline: none !important;
 }
 
-.center-btn {
-    width: 36px;
-    height: 36px;
-    background: rgba(255, 255, 255, 0.3);
+.dock-btn:focus,
+.dock-btn:focus-visible {
+    outline: none !important;
 }
 
 .dock-divider {
     width: 1px;
-    height: 16px;
-    background: rgba(0, 0, 0, 0.1);
+    height: 24px;
+    background: #E5E7EB;
+    margin: 0 4px;
 }
 
-/* Layer Panel Popup */
-.layer-panel-popup {
-    width: 320px;
-    max-width: 90vw;
-    padding: 16px;
-    margin-bottom: 8px;
+/* Placeholder for center button space */
+.dock-btn-placeholder {
+    width: 44px;
+    height: 44px;
+}
+
+/* Center button - absolute positioned, animates Menu <-> X */
+.dock-center-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #4B5563;
+    transition: color 0.2s ease;
+}
+
+.dock-center-btn:hover {
+    color: #3B82F6;
+}
+
+.dock-center-btn:focus,
+.dock-center-btn:active,
+.dock-center-btn:focus-visible {
+    border: none !important;
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    color: #4B5563;
+    /* Stay gray when focused/active, only hover changes color */
+}
+
+/* When showing X (is-close), default is gray, hover turns red */
+.dock-center-btn.is-close {
+    color: #4B5563;
+}
+
+.dock-center-btn.is-close:hover {
+    color: #EF4444 !important;
+}
+
+.dock-center-btn.is-close:focus,
+.dock-center-btn.is-close:active {
+    color: #4B5563;
+}
+
+/* Panel Header */
+.morphed-panel-content {
+    padding: 24px;
+    padding-bottom: 60px;
+    /* Space for absolutely positioned center button */
+    width: 100%;
 }
 
 .panel-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: rgba(0, 0, 0, 0.5);
+    margin-bottom: 24px;
 }
 
-.close-panel-btn {
+.panel-header span {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: 0.5px;
+}
+
+.panel-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 8px;
+}
+
+/* Panel close button - uses dock-btn base styling */
+.panel-close-btn {
+    background: transparent !important;
+    border: none;
+    color: #4B5563;
+}
+
+.panel-close-btn:hover {
+    background: transparent !important;
+    color: #EF4444 !important;
+}
+
+/* ==============================================
+   MEASUREMENT PILL
+   ============================================== */
+/* ==============================================
+   MEASUREMENT PILL
+   ============================================== */
+.measurement-pill {
+    position: absolute;
+    bottom: 96px;
+    left: 50%;
+    /* transform handled by framer-motion in Overlay.tsx to avoid conflict with scale animation */
+    background: var(--surface-translucent);
+    backdrop-filter: var(--blur-slight);
+    -webkit-backdrop-filter: var(--blur-slight);
+    border-radius: 9999px;
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.18);
+    /* 
+       Symmetric padding of 48px on BOTH sides ensures the text container 
+       is perfectly centered in the absolute middle of the pill.
+       The close button is then absolutely positioned within that padding space.
+    */
+    padding: 14px 48px 14px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    /* No gap needed with absolute button */
+    font-weight: 600;
+    font-size: 15px;
+    color: #111827;
+    z-index: 1005;
+    pointer-events: auto;
+}
+
+.measurement-close-btn {
+    position: absolute;
+    right: 8px;
+    /* Fixed distance from right edge */
+    top: 50%;
+    transform: translateY(-50%);
     background: transparent;
     border: none;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    color: var(--text-primary);
-    opacity: 0.5;
-    transition: opacity 0.2s;
+    color: #374151;
+    transition: color 0.2s ease;
+    padding: 0;
 }
 
-.close-panel-btn:hover {
-    opacity: 1;
+.measurement-close-btn:hover {
+    color: #EF4444;
 }
 
-/* Leaflet Popup Overrides */
-.leaflet-popup-content-wrapper {
-    background: rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-radius: 16px !important;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    color: #1f2937 !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
-    padding: 0 !important;
-    /* Let content handle padding */
+.measurement-close-btn svg {
+    width: 18px !important;
+    height: 18px !important;
 }
 
-.leaflet-popup-tip {
-    background: rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-top: none;
-    /* Tip triangle logic usually needs care */
-}
-
-.leaflet-popup-content {
-    margin: 12px !important;
-    line-height: 1.5;
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: 6px;
-}
-
-.legend-gradient {
-    height: 12px;
-    border-radius: 4px;
-    margin-bottom: 4px;
-}
-
-.temperature-gradient {
-    background: linear-gradient(to right, #0000ff 0%, #00ffff 25%, #00ff00 50%, #ffff00 75%, #ff0000 100%);
-}
-
-.legend-values {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--text-secondary);
-}
-
-.legend-items {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--text-primary);
-}
-
-.color-box {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    flex-shrink: 0;
-}
-
-.rain-light {
-    background: rgba(0, 255, 0, 0.6);
-}
-
-.rain-heavy {
-    background: rgba(255, 0, 0, 0.8);
-}
-
-.snow {
-    background: rgba(200, 200, 255, 0.8);
-}
-
-.icon-box {
-    font-size: 16px;
-    margin-right: 4px;
-}
-
-/* Coordinates Pill */
-.coordinates-pill {
-    padding: 6px 12px;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    min-width: 140px;
-}
-
-.coords-text {
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.scale-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-}
-
-.scale-bar {
-    height: 4px;
-    background: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 2px;
-    margin-bottom: 2px;
-    transition: width 0.2s ease-out;
-}
-
-.scale-label {
-    font-size: 10px;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-/* Mobile Responsiveness */
+/* ==============================================
+   MOBILE
+   ============================================== */
 @media (max-width: 768px) {
     .top-center-group {
         top: 16px;
-        width: 95%;
-        max-width: 100%;
-        gap: 8px;
-    }
-
-    .search-container-wrapper {
+        left: 50%;
+        transform: translateX(-50%);
         width: auto;
-        flex: 1;
-        max-width: none;
+        flex-direction: row;
+        gap: 8px;
+        justify-content: center;
     }
 
+    .search-container-wrapper,
+    .lang-container-wrapper {
+        width: auto;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .coordinates-pill {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .bottom-left-stack,
     .bottom-right-stack {
-        bottom: 90px;
-        /* Move above the dock */
-        right: 16px;
-    }
-
-    .bottom-left-stack {
-        bottom: 90px;
-        /* Move above the dock if needed, or keep low */
-        left: 16px;
-    }
-
-    .dock-wrapper {
-        bottom: 20px;
-        width: 90%;
-    }
-
-    .glass-dock {
-        width: 100%;
-        justify-content: space-between;
+        bottom: 100px;
     }
 }

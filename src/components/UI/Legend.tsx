@@ -3,16 +3,16 @@ import './Legend.css';
 
 interface LegendProps {
     showWeather: boolean;
-    showTemperature: boolean;
+
     activeLayer: string;
     weatherTs?: string;
     translations: any;
 }
 
-const Legend: React.FC<LegendProps> = ({ showWeather, showTemperature, activeLayer, weatherTs, translations }) => {
+const Legend: React.FC<LegendProps> = ({ showWeather, activeLayer, weatherTs, translations }) => {
 
     // Don't show if no relevant layers are active
-    if (!showWeather && !showTemperature && activeLayer !== 'relief' && activeLayer !== 'topo') {
+    if (!showWeather && activeLayer !== 'relief' && activeLayer !== 'topo') {
         return null;
     }
 
@@ -34,19 +34,7 @@ const Legend: React.FC<LegendProps> = ({ showWeather, showTemperature, activeLay
                 </div>
             )}
 
-            {/* Temperature Legend (VIIRS/MODIS LST) */}
-            {showTemperature && (
-                <div className="legend-section">
-                    <div className="legend-title">{translations.legend.temp}</div>
-                    <div className="legend-gradient temp-gradient"></div>
-                    <div className="legend-labels">
-                        <span>-25°</span>
-                        <span>0°</span>
-                        <span>25°</span>
-                        <span>50°+</span>
-                    </div>
-                </div>
-            )}
+
 
             {/* Elevation Legend (For Relief/Topo) */}
             {(activeLayer === 'relief' || activeLayer === 'topo') && (

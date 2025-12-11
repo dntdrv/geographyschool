@@ -1,47 +1,117 @@
+/* ==============================================
+   GEOGRAPHY SCHOOL - UNIFIED DESIGN SYSTEM
+   Single source of truth for all CSS variables
+   ============================================== */
+
+/* Google Sans Font */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
+
 :root {
-    /* Design Award 2025 - "Void" Aesthetic */
+    /* ========== COLOR PALETTE ========== */
+    /* Surface Colors */
+    --surface-primary: #FFFFFF;
+    --surface-secondary: #F3F4F6;
+    --surface-hover: #E5E7EB;
+
+    /* Translucent Surface for Glassmorphism */
+    --surface-translucent: rgba(255, 255, 255, 0.65);
+    --surface-glass-strong: rgba(255, 255, 255, 0.95);
+    /* Nearly solid opacity */
+    --surface-glass-medium: rgba(255, 255, 255, 0.72);
+    --surface-glass-ultra: rgba(255, 255, 255, 0.85);
+    /* High opacity but preserved glass feel */
+    --blur-slight: blur(16px) saturate(180%);
+    --blur-medium: blur(32px) saturate(200%);
+    --blur-ultra: blur(120px) saturate(250%);
+    /* Extreme blur to block background */
+    --blur-heavy: blur(80px) saturate(300%);
+    /* Maximum accessibility blur */
+
+    /* Text Colors */
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+
+    /* Accent Colors */
+    --accent-primary: #3B82F6;
+    --accent-danger: #EF4444;
+
+    /* Legacy aliases for backward compatibility */
     --color-background: #000000;
     --color-surface: #0a0a0a;
     --color-surface-hover: #1a1a1a;
-
     --color-primary: #ffffff;
     --color-secondary: #a1a1aa;
+    --color-text: #ffffff;
+    --color-text-muted: var(--text-secondary);
+    --color-accent: var(--accent-primary);
+    --icon-color: rgba(255, 255, 255, 0.9);
+
+    /* ========== SHADOW SYSTEM ========== */
+    --shadow-floating: 0px 16px 48px -12px rgba(0, 0, 0, 0.18);
+    --shadow-resting: 0px 8px 24px -6px rgba(0, 0, 0, 0.12);
+    --shadow-inner: inset 0px 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+
+    /* Legacy glass shadow */
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+
+    /* ========== GLASSMORPHISM ========== */
+    --glass-bg: rgba(255, 255, 255, 0.01);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --backdrop-blur: 60px;
+    --glass-saturation: 180%;
+    --glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+
+    /* ========== GEOMETRY ========== */
+    --radius-pill: 9999px;
+    --radius-panel: 32px;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 4px;
+    --radius-full: 9999px;
+
+    /* ========== SPACING ========== */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
     --spacing-2xl: 64px;
-    --spacing-md: 16px;
-    --spacing-sm: 8px;
-    --spacing-xs: 4px;
 
-    /* Glassmorphism - Apple Liquid Glass (VisionOS) */
-    --glass-bg: rgba(255, 255, 255, 0.01);
-    /* Crystal clear */
-    --glass-border: rgba(255, 255, 255, 0.15);
-    /* Subtle frost border */
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-    --backdrop-blur: 60px;
-    /* Maximum blur for depth */
-    --glass-saturation: 180%;
-
-    /* Inner Shine / Bevel for 3D feel */
-    --glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-
-    --icon-color: rgba(255, 255, 255, 0.9);
-
-    /* Typography - Editorial */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    /* ========== TYPOGRAPHY ========== */
+    --font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Consolas', monospace;
     --font-weight-light: 300;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 600;
 
-    /* Effects */
-    --radius-sm: 4px;
-    --radius-md: 12px;
-    --radius-full: 9999px;
+    /* ========== TRANSITIONS ========== */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-    --shadow-shine: 0 0 20px rgba(255, 255, 255, 0.3);
-
+    /* Anti-aliasing */
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== DARK MODE ========== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --surface-primary: #1C1C1E;
+        --surface-secondary: #2C2C2E;
+        --surface-hover: #3C3C3E;
+        --text-primary: #FFFFFF;
+        --text-secondary: #98989D;
+        --shadow-floating: 0px 16px 48px -12px rgba(0, 0, 0, 0.5);
+        --shadow-resting: 0px 8px 24px -6px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* ========== GLASS PANEL UTILITY ========== */
+.glass-panel {
+    background: var(--surface-primary);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-floating);
 }

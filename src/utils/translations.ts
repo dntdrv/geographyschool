@@ -15,10 +15,12 @@ export const translations = {
         },
         overlays: {
             graticules: 'Grid',
-            labels: 'Show Labels',
+            labels: 'Hide Labels',
             borders: 'Country Borders',
-            rain: 'Rain',
-            temperature: 'Temperature'
+            administrativeRegions: 'Administrative Regions',
+            selectCountry: 'Select Country',
+            none: 'None',
+            rain: 'Rain'
         },
         ui: {
             measurement: 'Measurement',
@@ -29,6 +31,16 @@ export const translations = {
             about: 'About',
             developedBy: 'Developed by',
             searchPlaceholder: 'Search location...'
+        },
+        search: {
+            noResults: 'No locations found for',
+            loading: 'Loading search...',
+            country: 'Country',
+            capital: 'Capital',
+            city: 'City',
+            town: 'Town',
+            village: 'Village',
+            landmark: 'Landmark'
         },
         legend: {
             precipitation: 'Precipitation',
@@ -44,6 +56,17 @@ export const translations = {
             removeMarker: 'Remove Marker',
             lat: 'Lat',
             lng: 'Lng'
+        },
+        view: {
+            hideUI: 'Hide UI',
+            showUI: 'Show UI',
+            fullscreen: 'Full Screen',
+            exitFullscreen: 'Exit Full Screen'
+        },
+        controls: {
+            zoomIn: 'Zoom In',
+            zoomOut: 'Zoom Out',
+            locateMe: 'Locate Me'
         }
     },
     bg: {
@@ -62,10 +85,12 @@ export const translations = {
         },
         overlays: {
             graticules: 'Мрежа',
-            labels: 'Покажи етикети',
+            labels: 'Скрий етикетите',
             borders: 'Държавни граници',
-            rain: 'Дъжд',
-            temperature: 'Температура'
+            administrativeRegions: 'Административни Области',
+            selectCountry: 'Избери Държава',
+            none: 'Няма',
+            rain: 'Дъжд'
         },
         ui: {
             measurement: 'Измерване',
@@ -76,6 +101,16 @@ export const translations = {
             about: 'За приложението',
             developedBy: 'Разработено от',
             searchPlaceholder: 'Търсене на локация...'
+        },
+        search: {
+            noResults: 'Не са намерени локации за',
+            loading: 'Зареждане на търсене...',
+            country: 'Държава',
+            capital: 'Столица',
+            city: 'Град',
+            town: 'Градче',
+            village: 'Село',
+            landmark: 'Забележителност'
         },
         legend: {
             precipitation: 'Валежи',
@@ -91,6 +126,17 @@ export const translations = {
             removeMarker: 'Премахни маркера',
             lat: 'Шир',
             lng: 'Дълж'
+        },
+        view: {
+            hideUI: 'Скрий UI',
+            showUI: 'Покажи UI',
+            fullscreen: 'Пълен Екран',
+            exitFullscreen: 'Изход от Пълен Екран'
+        },
+        controls: {
+            zoomIn: 'Увеличи',
+            zoomOut: 'Намали',
+            locateMe: 'Моята Локация'
         }
     },
     it: {
@@ -109,10 +155,12 @@ export const translations = {
         },
         overlays: {
             graticules: 'Reticolo',
-            labels: 'Mostra Etichette',
+            labels: 'Nascondi Etichette',
             borders: 'Confini Nazionali',
-            rain: 'Pioggia',
-            temperature: 'Temperatura'
+            administrativeRegions: 'Regioni Amministrative',
+            selectCountry: 'Seleziona Paese',
+            none: 'Nessuno',
+            rain: 'Pioggia'
         },
         ui: {
             measurement: 'Misurazione',
@@ -123,6 +171,16 @@ export const translations = {
             about: 'Informazioni',
             developedBy: 'Sviluppato da',
             searchPlaceholder: 'Cerca posizione...'
+        },
+        search: {
+            noResults: 'Nessuna posizione trovata per',
+            loading: 'Caricamento ricerca...',
+            country: 'Paese',
+            capital: 'Capitale',
+            city: 'Città',
+            town: 'Cittadina',
+            village: 'Villaggio',
+            landmark: 'Punto di interesse'
         },
         legend: {
             precipitation: 'Precipitazioni',
@@ -138,6 +196,17 @@ export const translations = {
             removeMarker: 'Rimuovi Marcatore',
             lat: 'Lat',
             lng: 'Lng'
+        },
+        view: {
+            hideUI: 'Nascondi UI',
+            showUI: 'Mostra UI',
+            fullscreen: 'Schermo Intero',
+            exitFullscreen: 'Esci da Schermo Intero'
+        },
+        controls: {
+            zoomIn: 'Ingrandisci',
+            zoomOut: 'Riduci',
+            locateMe: 'La Mia Posizione'
         }
     }
 };
