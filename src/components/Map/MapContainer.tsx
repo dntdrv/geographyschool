@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapContainer.css';
 import './Popup.css';
 import { MAP_STYLES, type MapStyleId } from './mapStyles';
-import * as turf from '@turf/turf';
+import { point, lineString, length as turfLength } from '@turf/turf';
 import type { Language } from '../UI/Overlay';
 import { translations } from '../../utils/translations';
 import { checkAndLoadCountries } from '../../utils/searchEngine';
@@ -31,7 +31,7 @@ export interface MapRef {
     locateMe: () => void;
 }
 
-const MapContainer = forwardRef<MapRef, MapContainerProps>(({
+const MapContainer = React.memo(forwardRef<MapRef, MapContainerProps>(({
     onMeasure,
     activeLayer,
     showGraticules,
@@ -220,18 +220,18 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         if (rulerState.current.points.length > 0) {
             // Points
             rulerState.current.points.forEach(pt => {
-                features.push(turf.point(pt));
+                features.push(point(pt));
             });
 
             // Line
             if (rulerState.current.points.length > 1) {
-                features.push(turf.lineString(rulerState.current.points));
+                features.push(lineString(rulerState.current.points));
             }
 
             // Temp Line (rubber band)
             if (rulerState.current.tempPoint && rulerState.current.points.length > 0) {
                 const lastPoint = rulerState.current.points[rulerState.current.points.length - 1];
-                features.push(turf.lineString([lastPoint, rulerState.current.tempPoint]));
+                features.push(lineString([lastPoint, rulerState.current.tempPoint]));
             }
         }
 
@@ -376,7 +376,7 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                 zoom: 3.5,
                 maxZoom: 18,
                 attributionControl: false,
-                preserveDrawingBuffer: true,
+                preserveDrawingBuffer: false,
                 trackResize: true
             });
 
@@ -443,9 +443,9 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     updateRulerLayer();
 
                     if (rulerState.current.points.length > 1) {
-                        const line = turf.lineString(rulerState.current.points);
-                        const length = turf.length(line, { units: 'kilometers' });
-                        onMeasure(`${length.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
+                        const line = lineString(rulerState.current.points);
+                        const len = turfLength(line, { units: 'kilometers' });
+                        onMeasure(`${len.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
 
                         // Stop measuring after 2 points
                         rulerState.current.active = false;
@@ -609,9 +609,9 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     updateRulerLayer();
 
                     // Live distance update
-                    const line = turf.lineString([rulerState.current.points[0], rulerState.current.tempPoint]);
-                    const length = turf.length(line, { units: 'kilometers' });
-                    onMeasure(`${length.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
+                    const line = lineString([rulerState.current.points[0], rulerState.current.tempPoint]);
+                    const len = turfLength(line, { units: 'kilometers' });
+                    onMeasure(`${len.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
                 }
             });
 
@@ -1039,6 +1039,6 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
             />
         </div>
     );
-});
+}));
 
 export default MapContainer;
