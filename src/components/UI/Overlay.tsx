@@ -40,7 +40,7 @@ interface OverlayProps {
     isMapDark?: boolean;
 }
 
-const Overlay: React.FC<OverlayProps> = ({
+const Overlay: React.FC<OverlayProps> = React.memo(({
     onToolChange,
     onLayerChange,
     measurement,
@@ -770,6 +770,6 @@ const Overlay: React.FC<OverlayProps> = ({
             </AnimatePresence>
         </div>
     );
-};
+});
 
 export default Overlay;

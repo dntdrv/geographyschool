@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import MapContainer from './components/Map/MapContainer';
+import MapContainer from './components/Map/LazyMapContainer';
 import type { MapRef } from './components/Map/MapContainer';
 import Overlay from './components/UI/Overlay';
 import type { MapStyleId } from './components/Map/mapStyles';
@@ -61,6 +61,12 @@ function App() {
     mapRef.current?.getMap()?.zoomOut();
   }, []);
 
+  const handleToggleGraticules = useCallback(() => setShowGraticules(prev => !prev), []);
+  const handleToggleLabels = useCallback(() => setShowLabels(prev => !prev), []);
+  const handleToggleBorders = useCallback(() => setShowBorders(prev => !prev), []);
+  const handleLocationSelect = useCallback((location: any) => mapRef.current?.flyToLocation(location.center, location.zoom, location.bbox, location.name), []);
+  const handleLocateMe = useCallback(() => mapRef.current?.locateMe(), []);
+
   return (
     <div className="App">
       <MapContainer
@@ -87,21 +93,21 @@ function App() {
         translations={translations[currentLang]}
         currentLayer={currentLayer}
         showGraticules={showGraticules}
-        onToggleGraticules={() => setShowGraticules(!showGraticules)}
+        onToggleGraticules={handleToggleGraticules}
         showLabels={showLabels}
-        onToggleLabels={() => setShowLabels(!showLabels)}
+        onToggleLabels={handleToggleLabels}
         showBorders={showBorders}
-        onToggleBorders={() => setShowBorders(!showBorders)}
+        onToggleBorders={handleToggleBorders}
         selectedAdminCountry={selectedAdminCountry}
         onSelectAdminCountry={setSelectedAdminCountry}
 
         activeTool={activeTool}
         isMapDark={isDark}
         coordinates={coordinates}
-        onLocationSelect={(location) => mapRef.current?.flyToLocation(location.center, location.zoom, location.bbox, location.name)}
+        onLocationSelect={handleLocationSelect}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onLocateMe={() => mapRef.current?.locateMe()}
+        onLocateMe={handleLocateMe}
       />
     </div>
   );
