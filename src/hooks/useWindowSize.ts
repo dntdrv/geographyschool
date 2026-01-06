@@ -14,17 +14,35 @@ export const useWindowSize = (): WindowSize => {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
+        let timeoutId: number | undefined;
+
         function handleResize() {
-            setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+
+            timeoutId = window.setTimeout(() => {
+                setWindowSize({
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                });
+            }, 150);
         }
 
         window.addEventListener('resize', handleResize);
-        handleResize(); // Initial call
 
-        return () => window.removeEventListener('resize', handleResize);
+        // Initial call without debounce
+        setWindowSize({
+            width: window.innerWidth,
+            height: window.innerHeight,
+        });
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
     }, []);
 
     return windowSize;

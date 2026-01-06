@@ -8,7 +8,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'framer-motion'],
+          vendor: ['react', 'react-dom'],
+          animation: ['framer-motion'],
+          icons: ['lucide-react'],
           maplibre: ['maplibre-gl', '@mapbox/mapbox-gl-draw'],
           turf: ['@turf/turf'],
           flexsearch: ['flexsearch'],

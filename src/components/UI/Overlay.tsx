@@ -1,11 +1,11 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Menu, MapPin, Ruler, X, Globe, Eye, EyeOff, Search, Maximize, Minimize } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Overlay.css';
 import './ZoomControl.css';
-import LayerMenu from './LayerMenu';
+const LayerMenu = lazy(() => import('./LayerMenu'));
 import ZoomControl from './ZoomControl';
-import SearchDropdown from './SearchDropdown';
+const SearchDropdown = lazy(() => import('./SearchDropdown'));
 import { useWindowSize } from '../../hooks/useWindowSize';
 export type Language = 'en' | 'bg' | 'it';
 import type { MapStyleId } from '../Map/mapStyles';
@@ -380,16 +380,18 @@ const Overlay: React.FC<OverlayProps> = ({
 
                             {/* Search Results Dropdown */}
                             <div ref={searchDropdownRef}>
-                                <SearchDropdown
-                                    results={searchResults}
-                                    isLoading={isSearchLoading && searchFocused}
-                                    isVisible={searchFocused && (searchResults.length > 0 || (searchQuery.length > 0 && !isSearchLoading))}
-                                    selectedIndex={selectedResultIndex}
-                                    onSelect={handleSelectResult}
-                                    onHover={setSelectedResultIndex}
-                                    highlightText={searchQuery}
-                                    translations={translations}
-                                />
+                                <Suspense fallback={null}>
+                                    <SearchDropdown
+                                        results={searchResults}
+                                        isLoading={isSearchLoading && searchFocused}
+                                        isVisible={searchFocused && (searchResults.length > 0 || (searchQuery.length > 0 && !isSearchLoading))}
+                                        selectedIndex={selectedResultIndex}
+                                        onSelect={handleSelectResult}
+                                        onHover={setSelectedResultIndex}
+                                        highlightText={searchQuery}
+                                        translations={translations}
+                                    />
+                                </Suspense>
                             </div>
                         </motion.div>
 
@@ -671,21 +673,23 @@ const Overlay: React.FC<OverlayProps> = ({
                                         <div className="panel-header">
                                             <span>{translations.ui.mapLayers}</span>
                                         </div>
-                                        <LayerMenu
-                                            activeLayer={currentLayer}
-                                            onLayerChange={onLayerChange}
-                                            showGraticules={showGraticules}
-                                            onToggleGraticules={onToggleGraticules}
-                                            showLabels={showLabels}
-                                            onToggleLabels={onToggleLabels}
-                                            showBorders={showBorders}
-                                            onToggleBorders={onToggleBorders}
+                                        <Suspense fallback={<div style={{ minHeight: '200px' }} />}>
+                                            <LayerMenu
+                                                activeLayer={currentLayer}
+                                                onLayerChange={onLayerChange}
+                                                showGraticules={showGraticules}
+                                                onToggleGraticules={onToggleGraticules}
+                                                showLabels={showLabels}
+                                                onToggleLabels={onToggleLabels}
+                                                showBorders={showBorders}
+                                                onToggleBorders={onToggleBorders}
 
-                                            translations={translations}
-                                            isDark={false}
-                                            selectedAdminCountry={selectedAdminCountry || null}
-                                            onSelectAdminCountry={onSelectAdminCountry || (() => { })}
-                                        />
+                                                translations={translations}
+                                                isDark={false}
+                                                selectedAdminCountry={selectedAdminCountry || null}
+                                                onSelectAdminCountry={onSelectAdminCountry || (() => { })}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 ) : (
                                     <motion.div

@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapContainer.css';
 import './Popup.css';
 import { MAP_STYLES, type MapStyleId } from './mapStyles';
-import * as turf from '@turf/turf';
+import { point, lineString, length } from '@turf/turf';
 import type { Language } from '../UI/Overlay';
 import { translations } from '../../utils/translations';
 import { checkAndLoadCountries } from '../../utils/searchEngine';
@@ -49,6 +49,7 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const lastActiveLayer = useRef<MapStyleId | null>(null); // Initialize as null to force first update
     const markers = useRef<maplibregl.Marker[]>([]);
+    const markerCleanups = useRef<(() => void)[]>([]); // Store cleanup functions for markers
 
     // Ruler State
     const rulerState = useRef<{ active: boolean; points: number[][]; tempPoint: number[] | null }>({
@@ -220,18 +221,18 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         if (rulerState.current.points.length > 0) {
             // Points
             rulerState.current.points.forEach(pt => {
-                features.push(turf.point(pt));
+                features.push(point(pt));
             });
 
             // Line
             if (rulerState.current.points.length > 1) {
-                features.push(turf.lineString(rulerState.current.points));
+                features.push(lineString(rulerState.current.points));
             }
 
             // Temp Line (rubber band)
             if (rulerState.current.tempPoint && rulerState.current.points.length > 0) {
                 const lastPoint = rulerState.current.points[rulerState.current.points.length - 1];
-                features.push(turf.lineString([lastPoint, rulerState.current.tempPoint]));
+                features.push(lineString([lastPoint, rulerState.current.tempPoint]));
             }
         }
 
@@ -443,9 +444,9 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     updateRulerLayer();
 
                     if (rulerState.current.points.length > 1) {
-                        const line = turf.lineString(rulerState.current.points);
-                        const length = turf.length(line, { units: 'kilometers' });
-                        onMeasure(`${length.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
+                        const line = lineString(rulerState.current.points);
+                        const distance = length(line, { units: 'kilometers' });
+                        onMeasure(`${distance.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
 
                         // Stop measuring after 2 points
                         rulerState.current.active = false;
@@ -555,6 +556,13 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     };
                     map.current.on('click', mapClickHandler);
 
+                    // Store cleanup function for this marker
+                    const cleanupMarker = () => {
+                        map.current?.off('click', mapClickHandler);
+                        popup.remove();
+                    };
+                    markerCleanups.current.push(cleanupMarker);
+
                     // Update remove button handler to also use animation
                     const removeBtn = popupContent.querySelector('#remove-marker-btn');
                     if (removeBtn) {
@@ -564,6 +572,10 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                                 popup.remove();
                                 marker.remove();
                                 markers.current = markers.current.filter(m => m !== marker);
+                                // Remove cleanup function from array
+                                const idx = markerCleanups.current.indexOf(cleanupMarker);
+                                if (idx > -1) markerCleanups.current.splice(idx, 1);
+                                // Call cleanup to remove event listeners
                                 map.current?.off('click', mapClickHandler);
                             }, 200);
                         });
@@ -609,9 +621,9 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
                     updateRulerLayer();
 
                     // Live distance update
-                    const line = turf.lineString([rulerState.current.points[0], rulerState.current.tempPoint]);
-                    const length = turf.length(line, { units: 'kilometers' });
-                    onMeasure(`${length.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
+                    const line = lineString([rulerState.current.points[0], rulerState.current.tempPoint]);
+                    const distance = length(line, { units: 'kilometers' });
+                    onMeasure(`${distance.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`);
                 }
             });
 
@@ -623,6 +635,15 @@ const MapContainer = forwardRef<MapRef, MapContainerProps>(({
         }
 
         return () => {
+            // Clean up all marker event listeners
+            markerCleanups.current.forEach(cleanup => cleanup());
+            markerCleanups.current = [];
+
+            // Remove all markers
+            markers.current.forEach(marker => marker.remove());
+            markers.current = [];
+
+            // Remove map
             map.current?.remove();
         };
     }, []);
