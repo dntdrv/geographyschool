@@ -516,6 +516,18 @@
 
     .bottom-left-stack,
     .bottom-right-stack {
-        bottom: 100px;
+        bottom: calc(100px + env(safe-area-inset-bottom));
+    }
+
+    .dock-wrapper {
+        bottom: calc(88px + env(safe-area-inset-bottom));
+    }
+
+    .measurement-pill {
+        bottom: calc(164px + env(safe-area-inset-bottom));
+    }
+
+    .hide-ui-btn-container {
+        bottom: calc(100px + env(safe-area-inset-bottom));
     }
 }
