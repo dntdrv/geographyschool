@@ -97,9 +97,10 @@ function indexLocations(locations: GeoLocation[]) {
             searchIndex!.add(indexCounter, loc.nameIt);
             indexToLocation.set(indexCounter++, locIdx);
         }
-        // All alternate names from GeoNames (multi-language)
+        // All alternate names from GeoNames (multi-language) - limit to 10 to reduce index size
         if (loc.alternateNames) {
-            loc.alternateNames.forEach(altName => {
+            const altNames = loc.alternateNames.slice(0, 10);
+            altNames.forEach(altName => {
                 searchIndex!.add(indexCounter, altName);
                 indexToLocation.set(indexCounter++, locIdx);
             });
@@ -183,7 +184,7 @@ export async function initializeSearchEngine(): Promise<void> {
             // Create FlexSearch index with optimal settings
             searchIndex = new FlexSearch.Index({
                 tokenize: 'forward',
-                resolution: 9,
+                resolution: 7, // Lowered from 9 for smaller index size
                 cache: 100,
             });
 

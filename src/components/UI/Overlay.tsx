@@ -1,11 +1,11 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Menu, MapPin, Ruler, X, Globe, Eye, EyeOff, Search, Maximize, Minimize } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Overlay.css';
 import './ZoomControl.css';
-import LayerMenu from './LayerMenu';
+const LayerMenu = lazy(() => import('./LayerMenu'));
 import ZoomControl from './ZoomControl';
-import SearchDropdown from './SearchDropdown';
+const SearchDropdown = lazy(() => import('./SearchDropdown'));
 import { useWindowSize } from '../../hooks/useWindowSize';
 export type Language = 'en' | 'bg' | 'it';
 import type { MapStyleId } from '../Map/mapStyles';
@@ -206,8 +206,9 @@ const Overlay: React.FC<OverlayProps> = ({
     // Responsive widths
     const getSearchWidth = () => {
         if (isMobile) {
-            // On mobile: smaller search bar when collapsed, expands with margin from edges
-            return searchFocused ? (windowWidth - 48) : 200;
+            // On mobile: account for padding (20px left + 20px right = 40px total)
+            // windowWidth - 48px for margins (24px each side) - 40px for padding
+            return searchFocused ? (windowWidth - 88) : 160;
         }
         return searchFocused ? 360 : 260;
     };
@@ -267,7 +268,7 @@ const Overlay: React.FC<OverlayProps> = ({
                                 marginRight: getSearchMarginRight(),
                                 opacity: !isMobile && showLang ? 0 : 1,
                                 scale: !isMobile && showLang ? 0.6 : 1,
-                                x: searchFocused ? 50 : (!isMobile && showLang ? 80 : 0),
+                                x: searchFocused && !isMobile ? 50 : (!isMobile && showLang ? 80 : 0),
                                 filter: !isMobile && showLang ? 'blur(8px)' : 'blur(0px)',
                             }}
                             transition={transitions.morph(searchFocused || showLang)}
@@ -282,6 +283,7 @@ const Overlay: React.FC<OverlayProps> = ({
                                 overflow: 'visible',
                                 paddingLeft: 20,
                                 paddingRight: 20,
+                                boxSizing: 'content-box',
                                 justifyContent: 'flex-start',
                                 position: 'relative',
                                 zIndex: !isMobile && showLang ? 10 : 100,
@@ -380,16 +382,18 @@ const Overlay: React.FC<OverlayProps> = ({
 
                             {/* Search Results Dropdown */}
                             <div ref={searchDropdownRef}>
-                                <SearchDropdown
-                                    results={searchResults}
-                                    isLoading={isSearchLoading && searchFocused}
-                                    isVisible={searchFocused && (searchResults.length > 0 || (searchQuery.length > 0 && !isSearchLoading))}
-                                    selectedIndex={selectedResultIndex}
-                                    onSelect={handleSelectResult}
-                                    onHover={setSelectedResultIndex}
-                                    highlightText={searchQuery}
-                                    translations={translations}
-                                />
+                                <Suspense fallback={null}>
+                                    <SearchDropdown
+                                        results={searchResults}
+                                        isLoading={isSearchLoading && searchFocused}
+                                        isVisible={searchFocused && (searchResults.length > 0 || (searchQuery.length > 0 && !isSearchLoading))}
+                                        selectedIndex={selectedResultIndex}
+                                        onSelect={handleSelectResult}
+                                        onHover={setSelectedResultIndex}
+                                        highlightText={searchQuery}
+                                        translations={translations}
+                                    />
+                                </Suspense>
                             </div>
                         </motion.div>
 
@@ -671,21 +675,23 @@ const Overlay: React.FC<OverlayProps> = ({
                                         <div className="panel-header">
                                             <span>{translations.ui.mapLayers}</span>
                                         </div>
-                                        <LayerMenu
-                                            activeLayer={currentLayer}
-                                            onLayerChange={onLayerChange}
-                                            showGraticules={showGraticules}
-                                            onToggleGraticules={onToggleGraticules}
-                                            showLabels={showLabels}
-                                            onToggleLabels={onToggleLabels}
-                                            showBorders={showBorders}
-                                            onToggleBorders={onToggleBorders}
+                                        <Suspense fallback={<div style={{ minHeight: '200px' }} />}>
+                                            <LayerMenu
+                                                activeLayer={currentLayer}
+                                                onLayerChange={onLayerChange}
+                                                showGraticules={showGraticules}
+                                                onToggleGraticules={onToggleGraticules}
+                                                showLabels={showLabels}
+                                                onToggleLabels={onToggleLabels}
+                                                showBorders={showBorders}
+                                                onToggleBorders={onToggleBorders}
 
-                                            translations={translations}
-                                            isDark={false}
-                                            selectedAdminCountry={selectedAdminCountry || null}
-                                            onSelectAdminCountry={onSelectAdminCountry || (() => { })}
-                                        />
+                                                translations={translations}
+                                                isDark={false}
+                                                selectedAdminCountry={selectedAdminCountry || null}
+                                                onSelectAdminCountry={onSelectAdminCountry || (() => { })}
+                                            />
+                                        </Suspense>
                                     </motion.div>
                                 ) : (
                                     <motion.div
