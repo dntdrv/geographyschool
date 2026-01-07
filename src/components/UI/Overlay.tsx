@@ -206,9 +206,10 @@ const Overlay: React.FC<OverlayProps> = ({
     // Responsive widths
     const getSearchWidth = () => {
         if (isMobile) {
-            // On mobile: account for padding (20px left + 20px right = 40px total)
-            // windowWidth - 48px for margins (24px each side) - 40px for padding
-            return searchFocused ? (windowWidth - 88) : 160;
+            // On mobile: use max-width with proper constraints
+            // Avoid any overflow by using a conservative calculation
+            const maxWidth = Math.min(windowWidth - 48, 350); // 24px margin each side minimum
+            return searchFocused ? maxWidth : Math.min(maxWidth, 180);
         }
         return searchFocused ? 360 : 260;
     };
@@ -283,7 +284,7 @@ const Overlay: React.FC<OverlayProps> = ({
                                 overflow: 'visible',
                                 paddingLeft: 20,
                                 paddingRight: 20,
-                                boxSizing: 'content-box',
+                                boxSizing: 'border-box',
                                 justifyContent: 'flex-start',
                                 position: 'relative',
                                 zIndex: !isMobile && showLang ? 10 : 100,
@@ -641,7 +642,9 @@ const Overlay: React.FC<OverlayProps> = ({
                 ======================================== */}
             <AnimatePresence>
                 {uiVisible && (
-                    <div className="dock-wrapper" ref={layerMenuRef}>
+                    <div className="dock-wrapper" ref={layerMenuRef} style={{
+                        bottom: isMobile ? `calc(140px + env(safe-area-inset-bottom))` : undefined
+                    }}>
                         <motion.div
                             className="morphing-dock"
                             initial={{ y: 100, opacity: 0 }}
