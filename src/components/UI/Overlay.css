@@ -516,18 +516,18 @@
 
     .bottom-left-stack,
     .bottom-right-stack {
-        bottom: calc(140px + env(safe-area-inset-bottom));
+        bottom: calc(140px + env(safe-area-inset-bottom)) !important;
     }
 
     .dock-wrapper {
-        bottom: calc(140px + env(safe-area-inset-bottom));
+        bottom: calc(140px + env(safe-area-inset-bottom)) !important;
     }
 
     .measurement-pill {
-        bottom: calc(204px + env(safe-area-inset-bottom));
+        bottom: calc(204px + env(safe-area-inset-bottom)) !important;
     }
 
     .hide-ui-btn-container {
-        bottom: calc(140px + env(safe-area-inset-bottom));
+        bottom: calc(140px + env(safe-area-inset-bottom)) !important;
     }
 }

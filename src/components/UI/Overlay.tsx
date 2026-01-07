@@ -206,8 +206,9 @@ const Overlay: React.FC<OverlayProps> = ({
     // Responsive widths
     const getSearchWidth = () => {
         if (isMobile) {
-            // On mobile: smaller search bar when collapsed, expands with margin from edges
-            return searchFocused ? (windowWidth - 48) : 200;
+            // On mobile: account for padding (20px left + 20px right = 40px total)
+            // windowWidth - 48px for margins (24px each side) - 40px for padding
+            return searchFocused ? (windowWidth - 88) : 160;
         }
         return searchFocused ? 360 : 260;
     };
@@ -282,6 +283,7 @@ const Overlay: React.FC<OverlayProps> = ({
                                 overflow: 'visible',
                                 paddingLeft: 20,
                                 paddingRight: 20,
+                                boxSizing: 'content-box',
                                 justifyContent: 'flex-start',
                                 position: 'relative',
                                 zIndex: !isMobile && showLang ? 10 : 100,
