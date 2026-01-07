@@ -267,7 +267,7 @@ const Overlay: React.FC<OverlayProps> = ({
                                 marginRight: getSearchMarginRight(),
                                 opacity: !isMobile && showLang ? 0 : 1,
                                 scale: !isMobile && showLang ? 0.6 : 1,
-                                x: searchFocused ? 50 : (!isMobile && showLang ? 80 : 0),
+                                x: searchFocused && !isMobile ? 50 : (!isMobile && showLang ? 80 : 0),
                                 filter: !isMobile && showLang ? 'blur(8px)' : 'blur(0px)',
                             }}
                             transition={transitions.morph(searchFocused || showLang)}
